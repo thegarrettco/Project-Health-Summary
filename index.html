@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Health Summary</title>
+  <title>TGC Construction Pipeline</title>
 
   <!-- Google Fonts: Playfair Display + Poppins -->
-  <link 
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@300;400;600&display=swap" 
-    rel="stylesheet" 
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
   />
 
   <style>
@@ -50,34 +50,42 @@
       background-position: center;
       background-repeat: no-repeat;
     }
-    
+
     /* Default (desktop-first) */
-.logo-desktop {
-  height: 45px; /* adjust as needed */
-  	width: auto;
-  	vertical-align: middle;
-}
+    .logo-desktop {
+      height: 45px;
+      width: auto;
+      vertical-align: middle;
+    }
 
-.logo-mobile {
-  display: none;
-  height: 85px; /* adjust as needed */
-  width: auto;
-  vertical-align: middle;
-}
+    .logo-mobile {
+      display: none;
+      height: 85px;
+      width: auto;
+      vertical-align: middle;
+    }
 
-/* Mobile view */
-@media (max-width: 768px) {
-  .logo-desktop {
-    display: none;
-  }
-  .logo-mobile {
-    display: inline-block;
-  }
-}
+    /* Mobile view */
+    @media (max-width: 768px) {
+      .logo-desktop { display: none; }
+      .logo-mobile { display: inline-block; }
+    }
+
     header h1 {
       font-family: "Poppins", sans-serif;
       font-size: 1.75rem;
       margin: 0;
+    }
+
+    .content {
+      padding: 2rem 5%;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    .dropdown-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
 
     select {
@@ -89,49 +97,21 @@
       font-size: 1rem;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      max-width: 250px;
+      min-width: 250px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      max-height: 200px;
     }
 
-    .content {
-      padding: 2rem 5%;
-      animation: fadeIn 0.6s ease-in-out;
+    select option {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
     }
-    
-    .dropdown-container {
-  	display: flex;
-  	align-items: center;
-  	gap: 1rem;
-	}
 
-	select {
-  	 background-color: white;
- 	 color: var(--secondary);
- 	 border: none;
- 	 border-radius: 6px;
- 	 padding: 0.6rem 1.2rem;
- 	 font-size: 1rem;
- 	 cursor: pointer;
- 	 box-shadow: 0 2px 6px rgba(0,0,0,0.15);
- 	 max-width: 250px;
-     min-width: 250px;
-	}
-
-/* Dropdown scroll behavior */
-	select option {
-  	padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-	}
-
-	select:focus {
-  outline: 2px solid var(--primary);
-}
-
-/* Force scrollable dropdown list */
-select[multiple], select {
-  overflow-y: auto;
-  scrollbar-width: thin;
-  max-height: 200px;
-}
-
+    select:focus {
+      outline: 2px solid var(--primary);
+    }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -156,6 +136,7 @@ select[multiple], select {
       margin-bottom: 3rem;
     }
 
+    /* ====== MAIN GRID (2 columns) ====== */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -163,12 +144,17 @@ select[multiple], select {
       align-items: stretch;
     }
 
+    /* NEW: make specific cards span both columns */
+    .span-two {
+      grid-column: 1 / -1;
+    }
+
     .left-column, .right-column {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       gap: 1.5rem;
-      min-width: 0; /* prevents inner content from blowing up columns */
+      min-width: 0;
     }
 
     .investment-highlights,
@@ -185,7 +171,7 @@ select[multiple], select {
       transition: transform 0.2s ease;
       display: flex;
       flex-direction: column;
-      min-width: 0; /* allows tables to scroll inside instead of forcing layout wider */
+      min-width: 0;
     }
 
     .investment-highlights:hover,
@@ -306,16 +292,11 @@ select[multiple], select {
       border-radius: 12px;
       position: relative;
       padding-bottom: 10px;
-
-      /* “cooler” scrollbar defaults (Firefox) */
       scrollbar-width: thick;
       scrollbar-color: rgba(0, 112, 185, 0.07);
     }
 
-    /* “cooler” scrollbar (Chromium/WebKit) */
-    .excel-table-wrap::-webkit-scrollbar {
-      height: 12px;
-    }
+    .excel-table-wrap::-webkit-scrollbar { height: 12px; }
     .excel-table-wrap::-webkit-scrollbar-track {
       background: rgba(0,0,0,0.07);
       border-radius: 999px;
@@ -330,7 +311,6 @@ select[multiple], select {
       background: rgba(0, 112, 185, 0.07);
     }
 
-    /* Subtle “fade” indicators at edges to make scrolling feel more premium */
     .excel-table-wrap::before,
     .excel-table-wrap::after {
       content: "";
@@ -352,10 +332,6 @@ select[multiple], select {
       background: linear-gradient(270deg, rgba(255,255,255,0.95), rgba(255,255,255,0));
     }
 
-    /* Key refinements:
-       - table sizes to its content (so values don’t overlap),
-       - but never shrinks below container width,
-       - and never shrinks below a readable minimum (forces scroll instead of compression). */
     .excel-table {
       display: inline-table;
       width: max-content;
@@ -385,13 +361,11 @@ select[multiple], select {
       border-bottom: 1px solid rgba(0,0,0,0.06);
       font-size: 0.9rem;
       white-space: nowrap;
-      overflow: visible;       /* do not clip numbers */
-      text-overflow: clip;     /* no ellipses */
+      overflow: visible;
+      text-overflow: clip;
     }
 
-    .excel-table tbody tr:last-child td {
-      border-bottom: none;
-    }
+    .excel-table tbody tr:last-child td { border-bottom: none; }
 
     .excel-row-label {
       font-weight: 600;
@@ -403,11 +377,8 @@ select[multiple], select {
       font-variant-numeric: tabular-nums;
     }
 
-    .excel-muted {
-      color: rgba(51, 62, 78, 0.6);
-    }
+    .excel-muted { color: rgba(51, 62, 78, 0.6); }
 
-    /* NEW: section headers/subtotals */
     .excel-section-header td {
       padding: 0.55rem 0.75rem;
       background: rgba(51, 62, 78, 0.06);
@@ -437,7 +408,7 @@ select[multiple], select {
       border-bottom: none;
     }
 
-    /* GALLERY STYLES */
+    /* GALLERY */
     .rendering-section {
       position: relative;
       min-height: 300px;
@@ -447,11 +418,7 @@ select[multiple], select {
       padding: 0;
     }
 
-    .gallery-slide {
-      display: none;
-      width: 100%;
-      height: 100%;
-    }
+    .gallery-slide { display: none; width: 100%; height: 100%; }
 
     .gallery-slide img {
       width: 100%;
@@ -475,17 +442,12 @@ select[multiple], select {
       z-index: 10;
     }
 
-    .prev:hover, .next:hover {
-      background: rgba(0, 0, 0, 0.6);
-    }
+    .prev:hover, .next:hover { background: rgba(0, 0, 0, 0.6); }
 
     .prev { left: 10px; }
     .next { right: 10px; }
 
-    .fade {
-      animation-name: fade;
-      animation-duration: 0.8s;
-    }
+    .fade { animation-name: fade; animation-duration: 0.8s; }
 
     @keyframes fade {
       from { opacity: 0.4; }
@@ -508,13 +470,7 @@ select[multiple], select {
       display: block;
       border-radius: 16px;
     }
-    
-    .logo {
-  	height: 45px; /* adjust as needed */
-  	width: auto;
-  	vertical-align: middle;
-	}
-    
+
     .metric-details {
       font-size: 0.85rem;
       color: var(--secondary);
@@ -522,19 +478,13 @@ select[multiple], select {
       transition: all 0.3s ease;
     }
 
-	
     @media (max-width: 900px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
+      .main-grid { grid-template-columns: 1fr; }
+      .financial-metrics { grid-template-columns: 1fr; }
 
-      .financial-metrics {
-        grid-template-columns: 1fr;
-      }
-      
       .dropdown-container {
         flex-direction: column;
-        gap: 0.8rem; /* smaller spacing when stacked */
+        gap: 0.8rem;
         align-items: stretch;
       }
 
@@ -543,11 +493,9 @@ select[multiple], select {
         min-width: 230px;
         max-width: 230px;
       }
-      
-      .project-header h2 {
-        font-size: 2.2rem; /* Smaller heading on mobile */
-      }
-      
+
+      .project-header h2 { font-size: 2.2rem; }
+
       .map-section {
         flex: 1;
         overflow: hidden;
@@ -556,28 +504,24 @@ select[multiple], select {
         justify-content: center;
         align-items: center;
       }
+
+      /* on 1-column layout, spanning is naturally 100% width */
+      .span-two { grid-column: auto; }
     }
   </style>
 </head>
 
-<!-- Basic favicon -->
+<!-- Favicons -->
 <link rel="icon" href="https://static.wixstatic.com/media/4f7dd4_fa97d3a434c14b45a582dd8e3459bdfe~mv2.png" type="image/x-icon">
-
-<!-- Optional: PNG version -->
 <link rel="icon" type="image/png" sizes="32x32" href="https://static.wixstatic.com/media/4f7dd4_fa97d3a434c14b45a582dd8e3459bdfe~mv2.png">
-
-<!-- Optional: Apple touch icon for iOS -->
 <link rel="apple-touch-icon" sizes="180x180" href="https://static.wixstatic.com/media/4f7dd4_fa97d3a434c14b45a582dd8e3459bdfe~mv2.png">
 
 <body>
   <header>
     <h1>
-      <!-- Desktop logo -->
       <a href="#" class="logo-link" id="logoLinkDesktop" aria-label="Go to Full TGC Portfolio">
         <img src="https://static.wixstatic.com/media/4f7dd4_2baa0e2530394de3af14df33ce1cdfe9~mv2.png" alt="The Garrett Companies" class="logo-desktop">
       </a>
-
-      <!-- Mobile logo -->
       <a href="#" class="logo-link" id="logoLinkMobile" aria-label="Go to Full TGC Portfolio">
         <img src="https://static.wixstatic.com/media/4f7dd4_70a90d24ec5746faa3b0ec0ace16b262~mv2.png" alt="The Garrett Companies" class="logo-mobile">
       </a>
@@ -601,6 +545,31 @@ select[multiple], select {
     </div>
 
     <div class="main-grid">
+      <!-- ✅ FULL-WIDTH ROW #1 -->
+      <div class="financial-section excel-card span-two" id="projectHealthCard" style="display:none;">
+        <div class="excel-card-header">
+          <h4 class="excel-card-title" style="margin:0;">Project Health</h4>
+          <div class="excel-card-badge" id="projectHealthUnitsBadge" style="display:none;"></div>
+        </div>
+
+        <div class="excel-table-wrap">
+          <table class="excel-table" id="projectHealthTable" aria-label="Project Health Table"></table>
+        </div>
+      </div>
+
+      <!-- ✅ FULL-WIDTH ROW #2 -->
+      <div class="financial-section excel-card span-two" id="cashFlowCard" style="display:none;">
+        <div class="excel-card-header">
+          <h4 class="excel-card-title" style="margin:0;">Cash Flow</h4>
+          <div class="excel-card-badge" id="cashFlowAsOfBadge" style="display:none;"></div>
+        </div>
+
+        <div class="excel-table-wrap">
+          <table class="excel-table" id="cashFlowTable" aria-label="Cash Flow Table"></table>
+        </div>
+      </div>
+
+      <!-- ✅ REMAINING SECTIONS KEEP THEIR 2-COLUMN LAYOUT -->
       <div class="left-column">
         <div class="investment-highlights">
           <h4>Investment Highlights</h4>
@@ -612,18 +581,6 @@ select[multiple], select {
           <table></table>
         </div>
 
-        <!-- Project Health -->
-        <div class="financial-section excel-card" id="projectHealthCard" style="display:none;">
-          <div class="excel-card-header">
-            <h4 class="excel-card-title" style="margin:0;">Project Health</h4>
-            <div class="excel-card-badge" id="projectHealthUnitsBadge" style="display:none;"></div>
-          </div>
-
-          <div class="excel-table-wrap">
-            <table class="excel-table" id="projectHealthTable" aria-label="Project Health Table"></table>
-          </div>
-        </div>
-
         <div class="rendering-section"></div>
       </div>
 
@@ -631,18 +588,6 @@ select[multiple], select {
         <div class="financial-section">
           <h4>Financial Metrics</h4>
           <div class="financial-metrics"></div>
-        </div>
-
-        <!-- Cash Flow -->
-        <div class="financial-section excel-card" id="cashFlowCard" style="display:none;">
-          <div class="excel-card-header">
-            <h4 class="excel-card-title" style="margin:0;">Cash Flow</h4>
-            <div class="excel-card-badge" id="cashFlowAsOfBadge" style="display:none;"></div>
-          </div>
-
-          <div class="excel-table-wrap">
-            <table class="excel-table" id="cashFlowTable" aria-label="Cash Flow Table"></table>
-          </div>
         </div>
 
         <div class="map-section">
@@ -877,16 +822,15 @@ const projects = {
         { total: true, label: "Grand Total", values: ["$13,861,868.79", "$1,069,720.76", "8%", "$12,792,148.03"] }
       ]
     },
-
     renderings: [
-      "https://static.wixstatic.com/media/4f7dd4_b8e32391bceb4e59b327f3fc09e2a930~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_61f93fdbb7004815b0c56a7e0aacf182~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_aa3fda402a4c4ce3b1376dd049736630~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_5feff0f060c44971ab765afd97cf154c~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_994344504b3049f5880bbdcac033b485~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_4529f002c028492cb4897415f29a44d7~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_df974da00f484a57b408d866c9cd8cdb~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_03e2b5c87a014bef9f0dec286959a3ef~mv2.png"
+      "https://static.wixstatic.com/media/4f7dd4_ee395035cf694665a6b11954071df96b~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_8964afa852484e0db5b133d89eb2628f~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_4af1b6e18b594827b557a50f3c537f29~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_1667109a399b4df1b53839b66393c054~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_8c44d170d3b247d69c8c645c13c64674~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_3560515fc49e45f6bf3d0a540c2dbbfc~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_ee89a624788c4398bdf5cd5564e0feba~mv2.png",
+      "https://static.wixstatic.com/media/4f7dd4_01ab8c13e40543e1bd6bd6e28d0ef782~mv2.png"
     ],
     mapUrl: "https://www.google.com/maps?q=32.946978, -80.058057&output=embed"
   }
@@ -1026,12 +970,8 @@ function renderProject(key) {
 
   /* Header */
   content.querySelector(".project-header h2").textContent = project.name;
-
-  // ✅ What you asked for:
-  // If tgcportfolio: show ONLY the date in the H3 (no “Garrett Construction Pipeline”)
-  // Else: keep the normal location text
   content.querySelector(".project-header h3").textContent =
-    (key === "tgcportfolio") ? `As of ${todayMDY}` : project.location;
+    (key === "tgcportfolio") ? todayMDY : project.location;
 
   /* Highlights */
   const highlightsUl = content.querySelector(".investment-highlights ul");
@@ -1107,7 +1047,6 @@ function renderProject(key) {
   if (project.cashFlow && project.cashFlow.columns && project.cashFlow.rows) {
     setCardVisibility("cashFlowCard", true);
 
-    // ✅ Keep your Cash Flow badge behavior (always today's date)
     cfBadge.style.display = "inline-block";
     cfBadge.textContent = `As of ${todayMDY}`;
 
@@ -1207,4 +1146,6 @@ function showSlides(n) {
 /* Initial render + listeners */
 renderProject(selector.value || Object.keys(projects)[0]);
 selector.addEventListener("change", e => renderProject(e.target.value));
-</script>
+  </script>
+</body>
+</html>
