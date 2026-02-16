@@ -152,9 +152,36 @@
     .left-column, .right-column {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-start; /* default stacking */
       gap: 1.5rem;
       min-width: 0;
+    }
+
+    /* Preserve your existing spacing behavior ONLY for real project pages */
+    .main-grid.is-project .left-column,
+    .main-grid.is-project .right-column {
+      justify-content: space-between;
+    }
+
+    /* ===========================
+       ✅ PORTFOLIO (HOME) FIXES ONLY
+       =========================== */
+
+    /* Let the gallery grow so it can reach the bottom and align with the map */
+    .main-grid.is-portfolio #galleryCard {
+      flex: 1 1 auto;
+      min-height: 300px;
+    }
+
+    /* Keep map card filling remaining space (explicit, safe) */
+    .main-grid.is-portfolio #mapCard {
+      flex: 1 1 auto;
+    }
+
+    /* Remove the desktop inset look on the HOME page map only */
+    .main-grid.is-portfolio #mapCard iframe {
+      width: 100%;
+      height: 100%;
     }
 
     .investment-highlights,
@@ -543,10 +570,10 @@
       }
 
       /* Assign areas */
-      .main-grid.is-project #projectScheduleCard  { grid-area: psu; }
-      .main-grid.is-project #scheduleVarianceCard { grid-area: svu; }
+      .main-grid.is-project #projectScheduleCard   { grid-area: psu; }
+      .main-grid.is-project #scheduleVarianceCard  { grid-area: svu; }
       .main-grid.is-project #projectHealthCard     { grid-area: ph; }
-      .main-grid.is-project #cashFlowCard         { grid-area: cf; }
+      .main-grid.is-project #cashFlowCard          { grid-area: cf; }
 
       .main-grid.is-project #profitSummaryCard { grid-area: profit; }
       .main-grid.is-project #notesCard         { grid-area: notes; }
@@ -653,11 +680,6 @@
           <table></table>
         </div>
 
-        <div class="investment-highlights" id="notesCard">
-          <h4>Notes & Updates</h4>
-          <ul></ul>
-        </div>
-
         <div class="rendering-section" id="galleryCard"></div>
       </div>
 
@@ -677,6 +699,11 @@
         <div class="financial-section" id="profitSummaryCard">
           <h4>Profit Summary & GC Projections</h4>
           <div class="financial-metrics"></div>
+        </div>
+
+        <div class="investment-highlights" id="notesCard">
+          <h4>Notes & Updates</h4>
+          <ul></ul>
         </div>
 
         <div class="map-section" id="mapCard">
