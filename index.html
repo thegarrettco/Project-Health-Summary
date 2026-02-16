@@ -144,7 +144,7 @@
       align-items: stretch;
     }
 
-    /* NEW: make specific cards span both columns */
+    /* make specific cards span both columns */
     .span-two {
       grid-column: 1 / -1;
     }
@@ -250,7 +250,7 @@
 
     /* ==============================
        "Excel-style" tables
-       Project Health + Cash Flow
+       Project Health + Cash Flow + (NEW) Schedule cards
        ============================== */
     .excel-card {
       position: relative;
@@ -478,6 +478,9 @@
       transition: all 0.3s ease;
     }
 
+    /* ===========================
+       MOBILE / TABLET
+       =========================== */
     @media (max-width: 900px) {
       .main-grid { grid-template-columns: 1fr; }
       .financial-metrics { grid-template-columns: 1fr; }
@@ -500,13 +503,80 @@
         flex: 1;
         overflow: hidden;
         height: 300px;
-        padding: 0;
+        padding: 10px;
         justify-content: center;
         align-items: center;
       }
 
       /* on 1-column layout, spanning is naturally 100% width */
       .span-two { grid-column: auto; }
+
+      /* ==========================================================
+         ✅ MOBILE-ONLY ORDER SHUFFLE (NON-COVER PAGES ONLY)
+         Updated to include the NEW schedule cards directly under Cash Flow:
+         1. Project Health
+         2. Cash Flow
+         3. Project Schedule Update
+         4. Schedule Variance Update
+         5. Profit Summary & GC Projections
+         6. Notes & Updates
+         7. Leasing Activity
+         8. Gallery
+         9. Map
+         ========================================================== */
+
+      /* Only activate when JS marks the grid as a non-cover project */
+      .main-grid.is-project {
+        /* keep grid (do NOT switch to flex) to preserve map behavior */
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "ph"
+          "cf"
+          "psu"
+          "svu"
+          "profit"
+          "notes"
+          "leasing"
+          "gallery"
+          "map";
+      }
+
+      /* Flatten the left/right wrappers so their children become grid items */
+      .main-grid.is-project .left-column,
+      .main-grid.is-project .right-column {
+        display: contents;
+      }
+
+      /* Assign areas */
+      .main-grid.is-project #projectHealthCard     { grid-area: ph; }
+      .main-grid.is-project #cashFlowCard         { grid-area: cf; }
+      .main-grid.is-project #projectScheduleCard  { grid-area: psu; }
+      .main-grid.is-project #scheduleVarianceCard { grid-area: svu; }
+
+      .main-grid.is-project #profitSummaryCard { grid-area: profit; }
+      .main-grid.is-project #notesCard         { grid-area: notes; }
+      .main-grid.is-project #leasingCard       { grid-area: leasing; }
+      .main-grid.is-project #galleryCard       { grid-area: gallery; }
+      .main-grid.is-project #mapCard           { grid-area: map; }
+
+      /* Ensure full width for all grid items in 1-col mobile */
+      .main-grid.is-project #projectHealthCard,
+      .main-grid.is-project #cashFlowCard,
+      .main-grid.is-project #projectScheduleCard,
+      .main-grid.is-project #scheduleVarianceCard,
+      .main-grid.is-project #profitSummaryCard,
+      .main-grid.is-project #notesCard,
+      .main-grid.is-project #leasingCard,
+      .main-grid.is-project #galleryCard,
+      .main-grid.is-project #mapCard {
+        grid-column: 1 / -1;
+      }
+
+      /* Map sizing fix for mobile (prevents odd 95% inset look) */
+      .main-grid.is-project #mapCard iframe {
+        width: 100%;
+        height: 100%;
+      }
     }
   </style>
 </head>
@@ -569,28 +639,52 @@
         </div>
       </div>
 
-      <!-- ✅ REMAINING SECTIONS KEEP THEIR 2-COLUMN LAYOUT -->
+      <!-- ✅ REMAINING SECTIONS KEEP THEIR 2-COLUMN LAYOUT (DESKTOP) -->
       <div class="left-column">
-       <div class="property-details">
+        <!-- ✅ NEW: within-column excel card (LEFT) -->
+        <div class="financial-section excel-card" id="projectScheduleCard" style="display:none;">
+          <div class="excel-card-header">
+            <h4 class="excel-card-title" style="margin:0;">Project Schedule Update</h4>
+            <div class="excel-card-badge" id="projectScheduleBadge" style="display:none;"></div>
+          </div>
+
+          <div class="excel-table-wrap">
+            <table class="excel-table" id="projectScheduleTable" aria-label="Project Schedule Update Table"></table>
+          </div>
+        </div>
+
+        <div class="property-details" id="leasingCard">
           <h4>Leasing Activity</h4>
           <table></table>
         </div>
-        
-        <div class="investment-highlights">
+
+        <div class="investment-highlights" id="notesCard">
           <h4>Notes & Updates</h4>
           <ul></ul>
         </div>
 
-        <div class="rendering-section"></div>
+        <div class="rendering-section" id="galleryCard"></div>
       </div>
 
       <div class="right-column">
-        <div class="financial-section">
+        <!-- ✅ NEW: within-column excel card (RIGHT) -->
+        <div class="financial-section excel-card" id="scheduleVarianceCard" style="display:none;">
+          <div class="excel-card-header">
+            <h4 class="excel-card-title" style="margin:0;">Schedule Variance Update</h4>
+            <div class="excel-card-badge" id="scheduleVarianceBadge" style="display:none;"></div>
+          </div>
+
+          <div class="excel-table-wrap">
+            <table class="excel-table" id="scheduleVarianceTable" aria-label="Schedule Variance Update Table"></table>
+          </div>
+        </div>
+
+        <div class="financial-section" id="profitSummaryCard">
           <h4>Profit Summary & GC Projections</h4>
           <div class="financial-metrics"></div>
         </div>
 
-        <div class="map-section">
+        <div class="map-section" id="mapCard">
           <iframe allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
@@ -686,23 +780,23 @@ const projects = {
 
     projectHealth: {
       unitsBadge: "267 Units",
-      columns: ["Charge Type", "Original Budget", "Adjustments (DNT)", "Original Contract", "Change Orders", "Revised Bank SOV", "Reallocation Adj", "True Buckets", "Cost / Risk", "Current $ Remaining"],
+      columns: ["Charge Type", "Original Contract", "Change Orders", "Revised Bank SOV", "Cost / Risk", "Current $ Remaining"],
       rows: [
         { section: "Construction" },
-        { label: "Profit", values: ["$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00"] },
-        { label: "Do Not Touch", values: ["$4,403,285.19", "—", "$4,403,285.19", "$399,779.60", "$4,803,064.79", "—", "$4,803,064.79", "—", "$4,803,064.79"] },
-        { label: "Contingency", values: ["$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00"] },
-        { label: "GC Risk", values: ["—", "—", "—", "—", "—", "—", "—", "$484,753.97", "$484,753.97"], muted: true },
-        { label: "General Conditions", values: ["$3,175,000.00", "—", "$3,175,000.00", "—", "$3,175,000.00", "—", "$3,175,000.00", "($3,196,438.88)", "($21,438.88)"] },
-        { subtotal: true, label: "Construction Total", values: ["$12,759,152.19", "—", "$12,759,152.19", "$399,779.60", "$13,158,931.79", "—", "$13,158,931.79", "($2,711,684.91)", "$10,447,246.88"] },
+        { label: "Profit", values: ["$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00"] },
+        { label: "Do Not Touch", values: ["$4,403,285.19", "$399,779.60", "$4,803,064.79", "—", "$4,803,064.79"] },
+        { label: "Contingency", values: ["$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00"] },
+        { label: "GC Risk", values: ["—", "—", "—", "$484,753.97", "$484,753.97"], muted: true },
+        { label: "General Conditions", values: ["$3,175,000.00", "—", "$3,175,000.00", "($3,196,438.88)", "($21,438.88)"] },
+        { subtotal: true, label: "Construction Total", values: ["$12,759,152.19", "$399,779.60", "$13,158,931.79", "($2,711,684.91)", "$10,447,246.88"] },
         { divider: true },
         { section: "Companies" },
-        { label: "Development Fee", values: ["$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00"] },
-        { label: "Soft Costs", values: ["$16,807,723.00", "—", "$16,807,723.00", "—", "$16,807,723.00", "—", "$16,807,723.00", "($16,807,723.00)", "—"] },
-        { label: "Interest Reserve", values: ["$4,571,376.00", "—", "$4,571,376.00", "—", "$4,571,376.00", "—", "$4,571,376.00", "($4,571,376.00)", "—"] },
-        { subtotal: true, label: "Companies Total", values: ["$25,321,626.00", "—", "$25,321,626.00", "—", "$25,321,626.00", "—", "$25,321,626.00", "($21,379,099.00)", "$3,942,527.00"] },
+        { label: "Development Fee", values: ["$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00"] },
+        { label: "Soft Costs", values: ["$16,807,723.00", "—", "$16,807,723.00", "($16,807,723.00)", "—"] },
+        { label: "Interest Reserve", values: ["$4,571,376.00", "—", "$4,571,376.00", "($4,571,376.00)", "—"] },
+        { subtotal: true, label: "Companies Total", values: ["$25,321,626.00", "—", "$25,321,626.00", "($21,379,099.00)", "$3,942,527.00"] },
         { divider: true },
-        { total: true, label: "Grand Total", values: ["$38,080,778.19", "—", "$38,080,778.19", "$399,779.60", "$38,480,557.79", "—", "$38,480,557.79", "($24,090,783.91)", "$14,389,773.88"] }
+        { total: true, label: "Grand Total", values: ["$38,080,778.19", "$399,779.60", "$38,480,557.79", "($24,090,783.91)", "$14,389,773.88"] }
       ]
     },
 
@@ -725,6 +819,38 @@ const projects = {
         { subtotal: true, label: "Companies Total", values: ["$2,907,612.00", "$792,985.00", "27%", "$2,114,627.00"] },
         { divider: true },
         { total: true, label: "Grand Total", values: ["$13,861,868.79", "$1,069,720.76", "8%", "$12,792,148.03"] }
+      ]
+    },
+
+    /* ✅ NEW: Project Schedule Update (placeholder rows; same count as variance below) */
+    projectScheduleUpdate: {
+      badge: "Update",
+      columns: ["Milestone", "Baseline", "Current", "Variance", "Notes"],
+      rows: [
+        { label: "Notice to Proceed", values: ["—", "—", "—", "—"] },
+        { label: "Sitework Complete", values: ["—", "—", "—", "—"] },
+        { label: "Foundation Complete", values: ["—", "—", "—", "—"] },
+        { label: "Framing Complete", values: ["—", "—", "—", "—"] },
+        { label: "MEP Rough-In Complete", values: ["—", "—", "—", "—"] },
+        { label: "Drywall Complete", values: ["—", "—", "—", "—"] },
+        { label: "First Unit Turn", values: ["—", "—", "—", "—"] },
+        { label: "TCO / CO", values: ["—", "—", "—", "—"] }
+      ]
+    },
+
+    /* ✅ NEW: Schedule Variance Update (placeholder rows; SAME ROW COUNT as above) */
+    scheduleVarianceUpdate: {
+      badge: "Variance",
+      columns: ["Area", "Baseline", "Current", "Variance", "Driver"],
+      rows: [
+        { label: "Permits", values: ["—", "—", "—", "—"] },
+        { label: "Materials / Lead Times", values: ["—", "—", "—", "—"] },
+        { label: "Labor", values: ["—", "—", "—", "—"] },
+        { label: "Weather", values: ["—", "—", "—", "—"] },
+        { label: "Design / RFI", values: ["—", "—", "—", "—"] },
+        { label: "Inspections", values: ["—", "—", "—", "—"] },
+        { label: "Turn / Punch", values: ["—", "—", "—", "—"] },
+        { label: "Other", values: ["—", "—", "—", "—"] }
       ]
     },
 
@@ -740,99 +866,6 @@ const projects = {
     ],
     mapUrl: "https://www.google.com/maps?q=40.001797, -105.034062&output=embed"
   },
-
-  northcharleston: {
-    name: "Garrett North Charleston",
-    state: "South Carolina",
-    location: "Charleston, South Carolina",
-    highlights: [
-      "Incredible Access and Visibility to I-26",
-      "Central Location to All Charleston Metro Employment and Retail"
-    ],
-    details: {
-      "Leasing Start Date":"---",
-      "Budgeted Stabilized Date":"---",
-      "Budgeted Occupancy":"4.00%",
-      "Current Occupancy":"2.43%",
-      "Lease Expirations":"1,020 SF",
-      "Current ATR":"97.17%",
-      "Total Marketing Costs":" $5,176.00",
-      "Trending Occupancy Projection":"2.83%",
-      "First Contacts":"129",
-      "Shows":"15",
-      "Conversion Ratio":"11.63%",
-      "Applications Completed":"4",
-      "Applications Approved":"4",
-      "Cost Per Approved Lease":"$1,294.00",
-      "Leases Signed":"3",
-      "Cost Per Lease":"$1,725.33"
-    },
-    financials: {
-      "Average Market Rent": { value: "$2,311", details: "<b>One-Bedrooms:</b> $1,864<br><b>Two-Bedrooms:</b> $2,468<br><b>Three-Bedrooms:</b> $2,913<br>" },
-      "Market Rent PSF": { value: "$2.27", details: "<b>One-Bedrooms:</b> $2.47<br><b>Two-Bedrooms:</b> $2.19<br><b>Three-Bedrooms:</b> $2.17<br>" },
-      "Total Project Cost": { value: "$81.3M", details: "<b>Debt:</b> $52,862,716.26 (65.0%)<br><b>LP Equity:</b> $25,618,085.57 (90.0%)" },
-      "Cost Per Unit":"$305k",
-      "Sale Price": "$103.7M",
-      "Exit Price/Unit":"$388k",
-      "Yield":"7.01%",
-      "Exit Cap Rate":"5.50%"
-    },
-
-    projectHealth: {
-      unitsBadge: "267 Units",
-      columns: ["Charge Type", "Original Budget", "Adjustments (DNT)", "Original Contract", "Change Orders", "Revised Bank SOV", "Reallocation Adj", "True Buckets", "Cost / Risk", "Current $ Remaining"],
-      rows: [
-        { section: "Construction" },
-        { label: "Profit", values: ["$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00", "—", "$2,976,192.00"] },
-        { label: "Do Not Touch", values: ["$4,403,285.19", "—", "$4,403,285.19", "$399,779.60", "$4,803,064.79", "—", "$4,803,064.79", "—", "$4,803,064.79"] },
-        { label: "Contingency", values: ["$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00", "—", "$2,204,675.00"] },
-        { label: "GC Risk", values: ["—", "—", "—", "—", "—", "—", "—", "$484,753.97", "$484,753.97"], muted: true },
-        { label: "General Conditions", values: ["$3,175,000.00", "—", "$3,175,000.00", "—", "$3,175,000.00", "—", "$3,175,000.00", "($3,196,438.88)", "($21,438.88)"] },
-        { subtotal: true, label: "Construction Total", values: ["$12,759,152.19", "—", "$12,759,152.19", "$399,779.60", "$13,158,931.79", "—", "$13,158,931.79", "($2,711,684.91)", "$10,447,246.88"] },
-        { divider: true },
-        { section: "Companies" },
-        { label: "Development Fee", values: ["$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00", "—", "$3,942,527.00"] },
-        { label: "Soft Costs", values: ["$16,807,723.00", "—", "$16,807,723.00", "—", "$16,807,723.00", "—", "$16,807,723.00", "($16,807,723.00)", "—"] },
-        { label: "Interest Reserve", values: ["$4,571,376.00", "—", "$4,571,376.00", "—", "$4,571,376.00", "—", "$4,571,376.00", "($4,571,376.00)", "—"] },
-        { subtotal: true, label: "Companies Total", values: ["$25,321,626.00", "—", "$25,321,626.00", "—", "$25,321,626.00", "—", "$25,321,626.00", "($21,379,099.00)", "$3,942,527.00"] },
-        { divider: true },
-        { total: true, label: "Grand Total", values: ["$38,080,778.19", "—", "$38,080,778.19", "$399,779.60", "$38,480,557.79", "—", "$38,480,557.79", "($24,090,783.91)", "$14,389,773.88"] }
-      ]
-    },
-
-    cashFlow: {
-      asOfBadge: "As of Dec",
-      columns: ["Charge Type", "Revised Bank SOV", "Amount Billed", "% Billed", "Balance to Bill"],
-      rows: [
-        { section: "Construction" },
-        { label: "Fee", values: ["$2,976,192.00", "$133,885.76", "4%", "$2,842,306.24"] },
-        { label: "Do Not Touch", values: ["$4,803,064.79", "—", "0%", "$4,803,064.79"] },
-        { label: "Contingency", values: ["$2,204,675.00", "—", "0%", "$2,204,675.00"] },
-        { label: "GC Risk", values: ["—", "—", "0%", "—"], muted: true },
-        { label: "General Conditions", values: ["$3,175,000.00", "$142,850.00", "4%", "$3,032,150.00"] },
-        { subtotal: true, label: "Construction Total", values: ["$10,954,256.79", "$276,735.76", "3%", "$10,677,521.03"] },
-        { divider: true },
-        { section: "Companies" },
-        { label: "Development Fee", values: ["$2,907,612.00", "$792,985.00", "27%", "$2,114,627.00"] },
-        { label: "Soft Costs", values: ["—", "—", "—", "—"], muted: true },
-        { label: "Interest Reserve", values: ["—", "—", "—", "—"], muted: true },
-        { subtotal: true, label: "Companies Total", values: ["$2,907,612.00", "$792,985.00", "27%", "$2,114,627.00"] },
-        { divider: true },
-        { total: true, label: "Grand Total", values: ["$13,861,868.79", "$1,069,720.76", "8%", "$12,792,148.03"] }
-      ]
-    },
-    renderings: [
-      "https://static.wixstatic.com/media/4f7dd4_ee395035cf694665a6b11954071df96b~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_8964afa852484e0db5b133d89eb2628f~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_4af1b6e18b594827b557a50f3c537f29~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_1667109a399b4df1b53839b66393c054~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_8c44d170d3b247d69c8c645c13c64674~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_3560515fc49e45f6bf3d0a540c2dbbfc~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_ee89a624788c4398bdf5cd5564e0feba~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_01ab8c13e40543e1bd6bd6e28d0ef782~mv2.png"
-    ],
-    mapUrl: "https://www.google.com/maps?q=32.946978, -80.058057&output=embed"
-  }
 };
 
 const stateSelector = document.getElementById("stateSelector");
@@ -967,6 +1000,13 @@ function renderProject(key) {
 
   const todayMDY = getTodayMDY();
 
+  /* ✅ Page mode hook for CSS (cover vs non-cover) */
+  const mainGrid = content.querySelector(".main-grid");
+  if (mainGrid) {
+    mainGrid.classList.toggle("is-portfolio", key === "tgcportfolio");
+    mainGrid.classList.toggle("is-project", key !== "tgcportfolio");
+  }
+
   /* Header */
   content.querySelector(".project-header h2").textContent = project.name;
   content.querySelector(".project-header h3").textContent =
@@ -1053,6 +1093,46 @@ function renderProject(key) {
   } else {
     setCardVisibility("cashFlowCard", false);
     if (cfTable) cfTable.innerHTML = "";
+  }
+
+  /* ✅ NEW: Project Schedule Update (LEFT column) */
+  const psTable = document.getElementById("projectScheduleTable");
+  const psBadge = document.getElementById("projectScheduleBadge");
+  const psCfg = project.projectScheduleUpdate;
+
+  if (psCfg && psCfg.columns && psCfg.rows) {
+    setCardVisibility("projectScheduleCard", true);
+    if (psCfg.badge) {
+      psBadge.style.display = "inline-block";
+      psBadge.textContent = psCfg.badge;
+    } else {
+      psBadge.style.display = "none";
+    }
+    renderExcelTable(psTable, psCfg);
+  } else {
+    setCardVisibility("projectScheduleCard", false);
+    if (psTable) psTable.innerHTML = "";
+    if (psBadge) psBadge.style.display = "none";
+  }
+
+  /* ✅ NEW: Schedule Variance Update (RIGHT column) */
+  const svTable = document.getElementById("scheduleVarianceTable");
+  const svBadge = document.getElementById("scheduleVarianceBadge");
+  const svCfg = project.scheduleVarianceUpdate;
+
+  if (svCfg && svCfg.columns && svCfg.rows) {
+    setCardVisibility("scheduleVarianceCard", true);
+    if (svCfg.badge) {
+      svBadge.style.display = "inline-block";
+      svBadge.textContent = svCfg.badge;
+    } else {
+      svBadge.style.display = "none";
+    }
+    renderExcelTable(svTable, svCfg);
+  } else {
+    setCardVisibility("scheduleVarianceCard", false);
+    if (svTable) svTable.innerHTML = "";
+    if (svBadge) svBadge.style.display = "none";
   }
 
   /* Logo-to-home behavior */
