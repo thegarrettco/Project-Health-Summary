@@ -24,6 +24,9 @@
 
       /* Shared min-width for excel-style tables (forces scroll instead of unreadable compression) */
       --excel-min-width: 980px;
+
+      /* how far you want the scrollbar from the table */
+      --excel-scrollbar-offset: 20px;
     }
 
     body {
@@ -317,9 +320,17 @@
       -webkit-overflow-scrolling: touch;
       border-radius: 12px;
       position: relative;
-      padding-bottom: 20px;
+
+      /* ✅ key change: no forced extra space unless scrollbar exists */
+      padding-bottom: 0;
+
       scrollbar-width: thick;
       scrollbar-color: rgba(0, 112, 185, 0.07);
+    }
+
+    /* ✅ only when there IS horizontal overflow do we add spacing */
+    .excel-table-wrap.has-x-scroll {
+      padding-bottom: var(--excel-scrollbar-offset);
     }
 
     .excel-table-wrap::-webkit-scrollbar { height: 12px; }
@@ -536,7 +547,6 @@
 
       /* ==========================================================
          ✅ MOBILE-ONLY ORDER SHUFFLE (NON-COVER PAGES ONLY)
-         UPDATED to reflect the swap:
          1. Project Schedule Update
          2. Schedule Variance Update
          3. Project Health
@@ -637,7 +647,7 @@
     </div>
 
     <div class="main-grid">
-      <!-- ✅ FULL-WIDTH ROW #1 (NOW: Project Schedule Update) -->
+      <!-- ✅ FULL-WIDTH ROW #1 -->
       <div class="financial-section excel-card span-two" id="projectScheduleCard" style="display:none;">
         <div class="excel-card-header">
           <h4 class="excel-card-title" style="margin:0;">CAC Variance Update</h4>
@@ -649,7 +659,7 @@
         </div>
       </div>
 
-      <!-- ✅ FULL-WIDTH ROW #2 (NOW: Schedule Variance Update) -->
+      <!-- ✅ FULL-WIDTH ROW #2 -->
       <div class="financial-section excel-card span-two" id="scheduleVarianceCard" style="display:none;">
         <div class="excel-card-header">
           <h4 class="excel-card-title" style="margin:0;">Schedule Variance Update</h4>
@@ -663,7 +673,6 @@
 
       <!-- ✅ REMAINING SECTIONS KEEP THEIR 2-COLUMN LAYOUT (DESKTOP) -->
       <div class="left-column">
-        <!-- ✅ NOW: Project Health lives where Project Schedule Update used to live (LEFT column) -->
         <div class="financial-section excel-card" id="projectHealthCard" style="display:none;">
           <div class="excel-card-header">
             <h4 class="excel-card-title" style="margin:0;">Project Health</h4>
@@ -684,7 +693,6 @@
       </div>
 
       <div class="right-column">
-        <!-- ✅ NOW: Cash Flow lives where Schedule Variance Update used to live (RIGHT column) -->
         <div class="financial-section excel-card" id="cashFlowCard" style="display:none;">
           <div class="excel-card-header">
             <h4 class="excel-card-title" style="margin:0;">Cash Flow</h4>
@@ -844,7 +852,6 @@ const projects = {
       ]
     },
 
-    /* ✅ Project Schedule Update */
     projectScheduleUpdate: {
       badge: "Update",
       columns: ["Milestone", "Baseline", "Current", "Variance", "Notes"],
@@ -860,7 +867,6 @@ const projects = {
       ]
     },
 
-    /* ✅ Schedule Variance Update */
     scheduleVarianceUpdate: {
       badge: "Variance",
       columns: ["Area", "Baseline", "Current", "Variance", "Driver"],
@@ -962,6 +968,29 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/* ✅ Scrollbar padding helper (adds class ONLY when overflow exists) */
+function updateExcelScrollbarPadding(scope = document) {
+  const wraps = scope.querySelectorAll(".excel-table-wrap");
+  wraps.forEach(wrap => {
+    // tiny fudge avoids off-by-1 from zoom rounding
+    const hasXScroll = wrap.scrollWidth > (wrap.clientWidth + 1);
+    wrap.classList.toggle("has-x-scroll", hasXScroll);
+  });
+}
+
+/* ✅ Keep it updated on resize + element resize */
+let __excelRO;
+function attachExcelWrapObservers(scope = document) {
+  // Observe wraps so padding updates if fonts/zoom/layout changes
+  if (!("ResizeObserver" in window)) return;
+
+  if (!__excelRO) {
+    __excelRO = new ResizeObserver(() => updateExcelScrollbarPadding(scope));
+  }
+
+  scope.querySelectorAll(".excel-table-wrap").forEach(el => __excelRO.observe(el));
 }
 
 function renderExcelTable(targetTableEl, config) {
@@ -1157,6 +1186,10 @@ function renderProject(key) {
     if (svBadge) svBadge.style.display = "none";
   }
 
+  /* ✅ Update scrollbar padding AFTER all tables render */
+  updateExcelScrollbarPadding(content);
+  attachExcelWrapObservers(content);
+
   /* Logo-to-home behavior */
   function goToFullPortfolio(scrollToTop = true) {
     const stateSelectorEl = document.getElementById("stateSelector");
@@ -1247,6 +1280,9 @@ function showSlides(n) {
 /* Initial render + listeners */
 renderProject(selector.value || Object.keys(projects)[0]);
 selector.addEventListener("change", e => renderProject(e.target.value));
+
+/* ✅ also keep padding correct on viewport resize */
+window.addEventListener("resize", () => updateExcelScrollbarPadding(content));
   </script>
 </body>
 </html>
