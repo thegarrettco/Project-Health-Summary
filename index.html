@@ -286,7 +286,7 @@
       color: var(--primary);
     }
 
-    /* ✅ NEW: Variance value coloring + faint overlay */
+    /* ✅ Variance value coloring + faint overlay */
     .metric-value.variance-positive { color: var(--pos-green); }
     .metric-value.variance-negative { color: var(--neg-red); }
 
@@ -343,7 +343,7 @@
     }
 
     .excel-card-badge {
-      background: rgba(0, 112, 185, 0.07);
+      background: #fff2d9;
       color: #111;
       font-weight: 700;
       font-size: 0.85rem;
@@ -540,6 +540,39 @@
       to { opacity: 1; }
     }
 
+    /* ✅ DroneDeploy badge on gallery (top-right) */
+    .gallery-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 20;
+      background: #fff2d9;
+      color: #111;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 10px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      pointer-events: none;
+      display: none; /* shown when we have a date */
+    }
+
+    /* ✅ Optional small status text if DroneDeploy fails (keeps layout unchanged) */
+    .gallery-status {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 20;
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      display: none;
+      max-width: calc(100% - 24px);
+    }
+
     .map-section {
       flex: 1;
       overflow: hidden;
@@ -599,15 +632,6 @@
 
       /* ==========================================================
          ✅ MOBILE-ONLY ORDER SHUFFLE (NON-COVER PAGES ONLY)
-         1. Project Schedule Update
-         2. Schedule Variance Update
-         3. Project Health
-         4. Cash Flow
-         5. Profit Summary & GC Projections
-         6. Notes & Updates
-         7. Leasing Activity
-         8. Gallery
-         9. Map
          ========================================================== */
 
       /* Only activate when JS marks the grid as a non-cover project */
@@ -774,6 +798,16 @@
   </div>
 
   <script>
+/* ============================================================
+   ✅ DroneDeploy CONFIG — PASTE YOUR API KEY HERE (TEMP)
+   ============================================================ */
+const DRONEDEPLOY_API_KEY = "3164868b7ddd4b9fa8bd9f9307cdba16"; // <-- you asked "where does the API go?" — right here.
+const DRONEDEPLOY_GRAPHQL_ENDPOINT = "https://www.dronedeploy.com/graphql";
+const DRONEDEPLOY_REFRESH_MS = 60 * 60 * 1000; // every hour
+
+/* ============================================================
+   Existing projects data (UNCHANGED except added droneDeploy block)
+   ============================================================ */
 const projects = {
   tgcportfolio: {
     name: "Project Health Summary",
@@ -861,7 +895,7 @@ const projects = {
     },
 
     projectHealth: {
-      unitsBadge: "267 Units",
+      unitsBadge: "As of 2/17/2026",
       columns: ["Charge Type", "Original Contract", "Change Orders", "Revised Bank SOV", "Cost / Risk", "Current $ Remaining"],
       rows: [
         { section: "Construction" },
@@ -905,7 +939,7 @@ const projects = {
     },
 
     projectScheduleUpdate: {
-      badge: "Approved 2.17.26",
+      badge: "Approved 2/17/26",
       columns: ["Cost Code", "Division", "CAC Variance", "Detail Description", "Committee Request"],
       rows: [
         { label: "12-3640.S", values: ["Countertops", "($103,514.20)", "Countertop buyout savings", "29"] },
@@ -915,7 +949,7 @@ const projects = {
     },
 
     scheduleVarianceUpdate: {
-      badge: "Approved 2.17.26",
+      badge: "Approved 2/17/26",
       columns: ["Building/Amenity", "Current Date", "Previous Date", "Variance"],
       rows: [
         { label: "Clubhouse Turnover", values: ["12/16/2026", "12/16/2026", "0"] },
@@ -932,6 +966,7 @@ const projects = {
       ]
     },
 
+    /* fallback images if DroneDeploy fails */
     renderings: [
       "https://static.wixstatic.com/media/4f7dd4_b8e32391bceb4e59b327f3fc09e2a930~mv2.png",
       "https://static.wixstatic.com/media/4f7dd4_61f93fdbb7004815b0c56a7e0aacf182~mv2.png",
@@ -942,7 +977,14 @@ const projects = {
       "https://static.wixstatic.com/media/4f7dd4_df974da00f484a57b408d866c9cd8cdb~mv2.png",
       "https://static.wixstatic.com/media/4f7dd4_03e2b5c87a014bef9f0dec286959a3ef~mv2.png"
     ],
-    mapUrl: "https://www.google.com/maps?q=40.001797, -105.034062&output=embed"
+
+    mapUrl: "https://www.google.com/maps?q=40.001797, -105.034062&output=embed",
+
+    /* ✅ DroneDeploy hook (your real project id + consistent plan name) */
+    droneDeploy: {
+      projectId: "Project:66b0ce0d79e6b866bc965f27",
+      photoGroupName: "Photo Group #1"
+    }
   },
 };
 
@@ -953,6 +995,14 @@ const content = document.getElementById("projectContent");
 /* Date formatter: M/D/YYYY */
 function getTodayMDY() {
   return new Date().toLocaleDateString("en-US");
+}
+
+/* Format ISO to M/D/YYYY */
+function formatISOToMDY(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US");
 }
 
 /* Get unique states */
@@ -1036,7 +1086,7 @@ function isPositiveNumberish(val) {
   return /\d/.test(s);
 }
 
-/* ✅ NEW: parse money-ish strings like "$876K", "($1.2M)", "$3,066,666.67" */
+/* parse money-ish strings like "$876K", "($1.2M)", "$3,066,666.67" */
 function parseMoneyishToNumber(val) {
   if (val === null || val === undefined) return null;
   let s = String(val).trim();
@@ -1054,7 +1104,6 @@ function parseMoneyishToNumber(val) {
 
   s = s.replace(/\$/g, "").replace(/,/g, "").trim();
 
-  // allow trailing k/m/b (any case)
   let mult = 1;
   const suffixMatch = s.match(/([kmb])$/i);
   if (suffixMatch) {
@@ -1063,7 +1112,6 @@ function parseMoneyishToNumber(val) {
     s = s.slice(0, -1).trim();
   }
 
-  // if it's not numeric at this point, bail
   const num = parseFloat(s);
   if (!isFinite(num)) return null;
 
@@ -1071,7 +1119,7 @@ function parseMoneyishToNumber(val) {
   return negative ? -out : out;
 }
 
-/* ✅ Scrollbar padding helper (adds class ONLY when overflow exists) */
+/* Scrollbar padding helper (adds class ONLY when overflow exists) */
 function updateExcelScrollbarPadding(scope = document) {
   const wraps = scope.querySelectorAll(".excel-table-wrap");
   wraps.forEach(wrap => {
@@ -1080,7 +1128,7 @@ function updateExcelScrollbarPadding(scope = document) {
   });
 }
 
-/* ✅ Keep it updated on resize + element resize */
+/* Keep it updated on resize + element resize */
 let __excelRO;
 function attachExcelWrapObservers(scope = document) {
   if (!("ResizeObserver" in window)) return;
@@ -1146,7 +1194,6 @@ function renderExcelTable(targetTableEl, config) {
     `;
   }).join("");
 
-  // keep your prior safety cleanup to avoid the literal ".trim()" token in-class
   targetTableEl.innerHTML = (thead + `<tbody>${tbodyRows}</tbody>`).replace(/\s+\.trim\(\)\s+/g, " ");
 }
 
@@ -1156,13 +1203,215 @@ function setCardVisibility(cardId, isVisible) {
   el.style.display = isVisible ? "flex" : "none";
 }
 
-function renderProject(key) {
+/* ============================================================
+   ✅ DroneDeploy GraphQL helpers (browser-based)
+   Notes:
+   - If CORS is blocked, this will throw. We catch + fallback.
+   - Auth uses Authorization: Bearer <api_key> as per DroneDeploy docs. :contentReference[oaicite:0]{index=0}
+   ============================================================ */
+async function ddGraphQL(query, variables = {}) {
+  if (!DRONEDEPLOY_API_KEY || DRONEDEPLOY_API_KEY.includes("PASTE_")) {
+    throw new Error("DroneDeploy API key is not set (DRONEDEPLOY_API_KEY).");
+  }
+
+  const res = await fetch(DRONEDEPLOY_GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${DRONEDEPLOY_API_KEY}`
+    },
+    body: JSON.stringify({ query, variables })
+  });
+
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch { throw new Error(`Non-JSON response from DroneDeploy: ${text.slice(0, 200)}`); }
+
+  if (!res.ok) {
+    throw new Error(`DroneDeploy HTTP ${res.status}: ${json?.errors?.[0]?.message || text.slice(0, 200)}`);
+  }
+  if (json.errors && json.errors.length) {
+    throw new Error(`DroneDeploy GraphQL error: ${json.errors[0].message}`);
+  }
+  return json.data;
+}
+
+/* Fetch latest ProgressPhotoPlan id by project + plan name, using dateCreation if available */
+async function ddGetLatestPhotoGroupPlanId(projectId, photoGroupName) {
+  const q = `
+    query GetProjectPlans($projectId: ID!) {
+      project(id: $projectId) {
+        id
+        name
+        plans(first: 100) {
+          edges {
+            node {
+              id
+              name
+              __typename
+              dateCreation
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await ddGraphQL(q, { projectId });
+
+  const edges = data?.project?.plans?.edges || [];
+  const candidates = edges
+    .map(e => e?.node)
+    .filter(n => n && n.__typename === "ProgressPhotoPlan" && String(n.name).trim() === String(photoGroupName).trim());
+
+  if (!candidates.length) return null;
+
+  // Prefer plan.dateCreation if available; otherwise fallback to "first candidate"
+  const withDates = candidates
+    .map(n => ({ id: n.id, date: n.dateCreation ? new Date(n.dateCreation).getTime() : null }))
+    .sort((a, b) => (b.date || 0) - (a.date || 0));
+
+  return withDates[0]?.id || null;
+}
+
+/* Fetch photos for a ProgressPhotoPlan */
+async function ddGetProgressPhotoPlanPhotos(planId, first = 30) {
+  const q = `
+    query GetProgressPhotos($planId: ID!, $first: Int!) {
+      node(id: $planId) {
+        __typename
+        ... on ProgressPhotoPlan {
+          id
+          name
+          photos(first: $first) {
+            edges {
+              node {
+                url
+                dateCreation
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await ddGraphQL(q, { planId, first });
+
+  const edges = data?.node?.photos?.edges || [];
+  const photos = edges
+    .map(e => e?.node)
+    .filter(p => p && p.url);
+
+  // Determine most recent photo dateCreation
+  const latestMs = photos.reduce((max, p) => {
+    const t = p.dateCreation ? new Date(p.dateCreation).getTime() : 0;
+    return t > max ? t : max;
+  }, 0);
+
+  return {
+    photos,
+    latestDateISO: latestMs ? new Date(latestMs).toISOString() : null
+  };
+}
+
+/* Cache so switching projects doesn't spam API */
+const __ddCache = {
+  // key: `${projectId}|${photoGroupName}` -> { planId, ts }
+  latestPlan: new Map(),
+  // key: planId -> { photos, latestDateISO, ts }
+  photosByPlan: new Map()
+};
+
+async function ddLoadLatestGalleryForProject(project, renderingDiv) {
+  const dd = project.droneDeploy;
+  if (!dd || !dd.projectId || !dd.photoGroupName) return null;
+
+  const cacheKey = `${dd.projectId}|${dd.photoGroupName}`;
+  let planId = null;
+
+  const cachedPlan = __ddCache.latestPlan.get(cacheKey);
+  if (cachedPlan && (Date.now() - cachedPlan.ts) < (DRONEDEPLOY_REFRESH_MS / 2)) {
+    planId = cachedPlan.planId;
+  } else {
+    planId = await ddGetLatestPhotoGroupPlanId(dd.projectId, dd.photoGroupName);
+    __ddCache.latestPlan.set(cacheKey, { planId, ts: Date.now() });
+  }
+
+  if (!planId) return null;
+
+  const cachedPhotos = __ddCache.photosByPlan.get(planId);
+  let photoPayload;
+  if (cachedPhotos && (Date.now() - cachedPhotos.ts) < (DRONEDEPLOY_REFRESH_MS / 2)) {
+    photoPayload = cachedPhotos;
+  } else {
+    const out = await ddGetProgressPhotoPlanPhotos(planId, 30);
+    photoPayload = { ...out, ts: Date.now() };
+    __ddCache.photosByPlan.set(planId, photoPayload);
+  }
+
+  return {
+    planId,
+    photos: photoPayload.photos,
+    latestDateISO: photoPayload.latestDateISO
+  };
+}
+
+/* ============================================================
+   Gallery renderer (same UX; just takes an array of urls)
+   ============================================================ */
+function renderGallery(renderingDiv, imageUrls, badgeText = "", statusText = "") {
+  const safeUrls = Array.isArray(imageUrls) ? imageUrls.filter(Boolean) : [];
+
+  renderingDiv.innerHTML = `
+    ${safeUrls.map((img, i) => `
+      <div class="gallery-slide fade">
+        <img src="${img}" alt="Gallery Image ${i + 1}">
+      </div>
+    `).join("")}
+    <div class="gallery-badge" id="galleryBadge"></div>
+    <div class="gallery-status" id="galleryStatus"></div>
+    <a class="prev">&#10094;</a>
+    <a class="next">&#10095;</a>
+  `;
+
+  const badgeEl = renderingDiv.querySelector("#galleryBadge");
+  if (badgeEl) {
+    if (badgeText) {
+      badgeEl.textContent = badgeText;
+      badgeEl.style.display = "inline-block";
+    } else {
+      badgeEl.style.display = "none";
+    }
+  }
+
+  const statusEl = renderingDiv.querySelector("#galleryStatus");
+  if (statusEl) {
+    if (statusText) {
+      statusEl.textContent = statusText;
+      statusEl.style.display = "inline-block";
+    } else {
+      statusEl.style.display = "none";
+    }
+  }
+
+  // wire arrows + slideshow
+  slideIndex = 1;
+  showSlides(slideIndex);
+
+  const prev = renderingDiv.querySelector(".prev");
+  const next = renderingDiv.querySelector(".next");
+  if (prev) prev.addEventListener("click", () => plusSlides(-1));
+  if (next) next.addEventListener("click", () => plusSlides(1));
+}
+
+let __ddIntervalHandle = null;
+
+async function renderProject(key) {
   const project = projects[key];
   if (!project) return;
 
   const todayMDY = getTodayMDY();
 
-  /* ✅ Page mode hook for CSS (cover vs non-cover) */
+  /* Page mode hook for CSS (cover vs non-cover) */
   const mainGrid = content.querySelector(".main-grid");
   if (mainGrid) {
     mainGrid.classList.toggle("is-portfolio", key === "tgcportfolio");
@@ -1203,7 +1452,7 @@ function renderProject(key) {
     const value = typeof info === "object" ? info.value : info;
     const details = (typeof info === "object" && info.details) ? info.details : null;
 
-    // ✅ Variance special rules (value color + faint overlay)
+    // Variance special rules (value color + faint overlay)
     const isVariance = String(label).trim().toLowerCase() === "variance";
     let varianceClass = "";
 
@@ -1310,7 +1559,7 @@ function renderProject(key) {
     if (svBadge) svBadge.style.display = "none";
   }
 
-  /* ✅ Update scrollbar padding AFTER all tables render */
+  /* Update scrollbar padding AFTER all tables render */
   updateExcelScrollbarPadding(content);
   attachExcelWrapObservers(content);
 
@@ -1354,29 +1603,67 @@ function renderProject(key) {
     };
   }
 
-  /* Rendering Gallery */
+  /* ============================================================
+     ✅ Rendering Gallery (DroneDeploy for Garrett Mesa, else default)
+     ============================================================ */
   const renderingDiv = content.querySelector(".rendering-section");
-  renderingDiv.innerHTML = `
-    ${(project.renderings || []).map((img, i) => `
-      <div class="gallery-slide fade">
-        <img src="${img}" alt="${project.name} Rendering ${i + 1}">
-      </div>
-    `).join("")}
-    <a class="prev">&#10094;</a>
-    <a class="next">&#10095;</a>
-  `;
 
+  // Stop any prior auto-refresh loop
+  if (__ddIntervalHandle) {
+    clearInterval(__ddIntervalHandle);
+    __ddIntervalHandle = null;
+  }
+
+  // Helper to load DroneDeploy and render gallery
+  const loadDD = async () => {
+    try {
+      const dd = await ddLoadLatestGalleryForProject(project, renderingDiv);
+      if (dd && dd.photos && dd.photos.length) {
+        const urls = dd.photos.map(p => p.url);
+        const badge = dd.latestDateISO ? `Updated ${formatISOToMDY(dd.latestDateISO)}` : "";
+        renderGallery(renderingDiv, urls, badge, "");
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("[DroneDeploy] Gallery load failed:", err);
+
+      // Visible hint (does not break layout); still fallback images show
+      const msg = String(err && err.message ? err.message : err);
+      renderGallery(
+        renderingDiv,
+        (project.renderings || []),
+        "",
+        msg.includes("Failed to fetch") ? "DroneDeploy blocked (CORS). Using fallback images." : "DroneDeploy error. Using fallback images."
+      );
+      return false;
+    }
+  };
+
+  if (project.droneDeploy && project.droneDeploy.projectId) {
+    // First try DD
+    const ok = await loadDD();
+
+    // If OK, refresh hourly while user is on this project
+    if (ok) {
+      __ddIntervalHandle = setInterval(async () => {
+        // only refresh if still on same project
+        if (selector.value === key) await loadDD();
+      }, DRONEDEPLOY_REFRESH_MS);
+    }
+
+    // If not OK, we already rendered fallback inside loadDD()
+    if (!ok) {
+      // ensure slideshow initialized (renderGallery handles it)
+    }
+  } else {
+    // Default gallery behavior (existing)
+    renderGallery(renderingDiv, (project.renderings || []));
+  }
+
+  /* Map */
   const iframe = content.querySelector(".map-section iframe");
   if (iframe) iframe.src = project.mapUrl || "";
-
-  /* Gallery functionality */
-  slideIndex = 1;
-  showSlides(slideIndex);
-
-  const prev = renderingDiv.querySelector(".prev");
-  const next = renderingDiv.querySelector(".next");
-  if (prev) prev.addEventListener("click", () => plusSlides(-1));
-  if (next) next.addEventListener("click", () => plusSlides(1));
 
   /* Swap section headings */
   if (key === "tgcportfolio") {
@@ -1405,7 +1692,7 @@ function showSlides(n) {
 renderProject(selector.value || Object.keys(projects)[0]);
 selector.addEventListener("change", e => renderProject(e.target.value));
 
-/* ✅ also keep padding correct on viewport resize */
+/* also keep padding correct on viewport resize */
 window.addEventListener("resize", () => updateExcelScrollbarPadding(content));
   </script>
 </body>
