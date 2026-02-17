@@ -28,9 +28,13 @@
       /* how far you want the scrollbar from the table */
       --excel-scrollbar-offset: 20px;
 
-      /* ✅ NEW: number coloring */
+      /* Number coloring */
       --neg-red: #8b0000;    /* dark red */
       --pos-green: #0b5d1e;  /* dark green */
+
+      /* Variance overlay tints */
+      --pos-tint: rgba(11, 93, 30, 0.08);
+      --neg-tint: rgba(139, 0, 0, 0.08);
     }
 
     body {
@@ -282,6 +286,39 @@
       color: var(--primary);
     }
 
+    /* ✅ NEW: Variance value coloring + faint overlay */
+    .metric-value.variance-positive { color: var(--pos-green); }
+    .metric-value.variance-negative { color: var(--neg-red); }
+
+    .metric-card.variance-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card.variance-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0; /* default off */
+      transition: opacity 0.2s ease;
+    }
+    .metric-card.variance-card.variance-positive::after {
+      background: var(--pos-tint);
+      opacity: 1;
+    }
+    .metric-card.variance-card.variance-negative::after {
+      background: var(--neg-tint);
+      opacity: 1;
+    }
+
+    /* keep text above overlay */
+    .metric-card.variance-card .metric-label,
+    .metric-card.variance-card .metric-value,
+    .metric-card.variance-card .metric-details {
+      position: relative;
+      z-index: 1;
+    }
+
     /* ==============================
        "Excel-style" tables
        ============================== */
@@ -446,7 +483,7 @@
       border-bottom: none;
     }
 
-    /* ✅ NEW: numeric coloring helpers (scoped to excel-table so nothing else changes) */
+    /* numeric coloring helpers */
     .excel-table td.excel-number.is-negative {
       color: var(--neg-red);
     }
@@ -983,34 +1020,61 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-/* ✅ NEW: value classifiers */
+/* value classifiers */
 function isParenNegative(val) {
   if (val === null || val === undefined) return false;
   const s = String(val).trim();
-  // matches: ($1,234.56) OR (123) OR (  - etc ) — but only when wrapped in parentheses
   return /^\(\s*[^)]+\s*\)$/.test(s) && /\d/.test(s);
 }
 
 function isPositiveNumberish(val) {
   if (val === null || val === undefined) return false;
   const s = String(val).trim();
-
-  // ignore placeholders / dashes
   if (!s || s === "—" || s === "-" || s.toLowerCase() === "n/a") return false;
-
-  // explicit negatives
   if (isParenNegative(s)) return false;
   if (/^-/.test(s)) return false;
-
-  // must contain at least one digit to count as numeric-ish
   return /\d/.test(s);
+}
+
+/* ✅ NEW: parse money-ish strings like "$876K", "($1.2M)", "$3,066,666.67" */
+function parseMoneyishToNumber(val) {
+  if (val === null || val === undefined) return null;
+  let s = String(val).trim();
+  if (!s) return null;
+
+  let negative = false;
+  if (isParenNegative(s)) {
+    negative = true;
+    s = s.replace(/^\(\s*/,"").replace(/\s*\)$/,"");
+  }
+  if (/^-/.test(s)) {
+    negative = true;
+    s = s.replace(/^-+/,"");
+  }
+
+  s = s.replace(/\$/g, "").replace(/,/g, "").trim();
+
+  // allow trailing k/m/b (any case)
+  let mult = 1;
+  const suffixMatch = s.match(/([kmb])$/i);
+  if (suffixMatch) {
+    const suf = suffixMatch[1].toLowerCase();
+    mult = suf === "k" ? 1e3 : (suf === "m" ? 1e6 : 1e9);
+    s = s.slice(0, -1).trim();
+  }
+
+  // if it's not numeric at this point, bail
+  const num = parseFloat(s);
+  if (!isFinite(num)) return null;
+
+  const out = num * mult;
+  return negative ? -out : out;
 }
 
 /* ✅ Scrollbar padding helper (adds class ONLY when overflow exists) */
 function updateExcelScrollbarPadding(scope = document) {
   const wraps = scope.querySelectorAll(".excel-table-wrap");
   wraps.forEach(wrap => {
-    // tiny fudge avoids off-by-1 from zoom rounding
     const hasXScroll = wrap.scrollWidth > (wrap.clientWidth + 1);
     wrap.classList.toggle("has-x-scroll", hasXScroll);
   });
@@ -1019,7 +1083,6 @@ function updateExcelScrollbarPadding(scope = document) {
 /* ✅ Keep it updated on resize + element resize */
 let __excelRO;
 function attachExcelWrapObservers(scope = document) {
-  // Observe wraps so padding updates if fonts/zoom/layout changes
   if (!("ResizeObserver" in window)) return;
 
   if (!__excelRO) {
@@ -1057,7 +1120,9 @@ function renderExcelTable(targetTableEl, config) {
     const isSubtotal = !!(r && r.subtotal);
     const isMuted = !!(r && r.muted);
 
-    const label = escapeHtml(r && r.label ? r.label : "");
+    const labelText = (r && r.label) ? String(r.label).trim() : "";
+    const label = escapeHtml(labelText);
+
     const values = (r && Array.isArray(r.values)) ? r.values : [];
     const padded = values.slice(0, numericCols);
     while (padded.length < numericCols) padded.push("—");
@@ -1065,17 +1130,14 @@ function renderExcelTable(targetTableEl, config) {
     const rowClass = (isTotal ? "excel-total" : (isSubtotal ? "excel-subtotal" : ""));
     const isTotalsRow = (isTotal || isSubtotal);
 
-    // ✅ only these labels should get green (when value is positive)
-    const greenEligibleLabel = /^(Construction Total|Companies Total|Grand Total)$/i.test((r && r.label) ? String(r.label).trim() : "");
+    const greenEligibleLabel = /^(Construction Total|Companies Total|Grand Total)$/i.test(labelText);
 
     return `
       <tr class="${rowClass}">
         <td class="excel-row-label ${isMuted ? "excel-muted" : ""}">${label}</td>
         ${padded.map(v => {
           const negClass = isParenNegative(v) ? "is-negative" : "";
-          const greenClass =
-            (isTotalsRow && greenEligibleLabel && isPositiveNumberish(v)) ? "total-positive" : "";
-
+          const greenClass = (isTotalsRow && greenEligibleLabel && isPositiveNumberish(v)) ? "total-positive" : "";
           return `
             <td class="excel-number ${isMuted ? "excel-muted" : ""} ${negClass} ${greenClass}".trim() title="${escapeHtml(v)}">${escapeHtml(v)}</td>
           `;
@@ -1084,7 +1146,7 @@ function renderExcelTable(targetTableEl, config) {
     `;
   }).join("");
 
-  // tiny cleanup: the template above includes .trim() as literal; fix safely here
+  // keep your prior safety cleanup to avoid the literal ".trim()" token in-class
   targetTableEl.innerHTML = (thead + `<tbody>${tbodyRows}</tbody>`).replace(/\s+\.trim\(\)\s+/g, " ");
 }
 
@@ -1141,9 +1203,22 @@ function renderProject(key) {
     const value = typeof info === "object" ? info.value : info;
     const details = (typeof info === "object" && info.details) ? info.details : null;
 
+    // ✅ Variance special rules (value color + faint overlay)
+    const isVariance = String(label).trim().toLowerCase() === "variance";
+    let varianceClass = "";
+
+    if (isVariance) {
+      const n = parseMoneyishToNumber(value);
+      if (typeof n === "number") {
+        varianceClass = (n < 0) ? "variance-negative" : (n > 0 ? "variance-positive" : "");
+      }
+      card.classList.add("variance-card");
+      if (varianceClass) card.classList.add(varianceClass);
+    }
+
     card.innerHTML = `
       <div class="metric-label">${label}</div>
-      <div class="metric-value">${value}</div>
+      <div class="metric-value ${isVariance ? varianceClass : ""}">${value}</div>
       ${details ? `<div class="metric-details">${details}</div>` : ""}
     `;
 
