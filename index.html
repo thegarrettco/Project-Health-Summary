@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Health Summary</title>
+  <title>EG Executive Dashboard</title>
 
   <!-- Google Fonts: Playfair Display + Poppins -->
   <link
@@ -864,7 +865,7 @@ const DRONEDEPLOY_REFRESH_MS = 60 * 60 * 1000; // every hour
    ============================================================ */
 const projects = {
   tgcportfolio: {
-    name: "Project Health Summary",
+    name: "EG Executive Dashboard",
     location: "Garrett Construction Pipeline",
     highlights: [
       "Portfolio/Nationwide Construction Higlight will go in this space. Big picture!",
@@ -1608,7 +1609,7 @@ async function renderProject(key) {
   /* Header */
   content.querySelector(".project-header h2").textContent = project.name;
   content.querySelector(".project-header h3").textContent =
-    isCover ? `As of ${todayMDY}` : project.location;
+    isCover ? `Project Health, CAC Variance, & More` : project.location;
 
   /* ============================================================
      ✅ COVER PAGE: show ONLY the 3 excel tables, hide everything else
