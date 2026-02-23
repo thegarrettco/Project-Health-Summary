@@ -176,7 +176,6 @@
 
     /* ===========================
        ✅ COVER PAGE (PORTFOLIO) ONLY
-       Overhaul: 3 full-width excel tables + hide other sections
        =========================== */
     .main-grid.is-portfolio {
       grid-template-columns: 1fr;
@@ -185,10 +184,6 @@
     .main-grid.is-portfolio .right-column {
       display: none;
     }
-
-    /* ===========================
-       ✅ PORTFOLIO (HOME) FIXES ONLY (legacy; harmless)
-       =========================== */
 
     /* Let the gallery grow so it can reach the bottom and align with the map */
     .main-grid.is-portfolio #galleryCard {
@@ -207,16 +202,30 @@
       height: 100%;
     }
 
+    /* ==========================================================
+       ✅ CARD BASES
+       IMPORTANT: Keep rendering/map padding behavior unchanged.
+       We standardize title spacing via .card-header and give
+       consistent padding-top via padding: 1.5rem here.
+       ========================================================== */
     .investment-highlights,
     .property-details,
-    .financial-section,
+    .financial-section {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem; /* ✅ standardized padding (adds top padding) */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* rendering + map intentionally keep their own padding rules */
     .rendering-section,
     .map-section {
       background: white;
       border-radius: 16px;
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-      padding-bottom: 1.5rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       transition: transform 0.2s ease;
       display: flex;
@@ -232,20 +241,30 @@
       transform: translateY(-4px);
     }
 
-    .investment-highlights h4,
-    .property-details h4,
-    .financial-section h4,
-    .rendering-section h4,
-    .map-section h4 {
-      font-size: 1.35rem;
-      color: var(--secondary);
-      margin-bottom: 1rem;
+    /* ==========================================================
+       ✅ CONSISTENT TITLE / HEADER ROW (bulleted + non-excel)
+       ========================================================== */
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem; /* consistent spacing under title row */
     }
 
+    .card-header h4 {
+      font-size: 1.35rem; /* matches excel-card-title */
+      color: var(--secondary);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    /* Bullets block spacing remains consistent */
     .investment-highlights ul {
       list-style: disc;
       padding-left: 1.2rem;
       line-height: 1.6;
+      margin: 0;
     }
 
     table {
@@ -497,17 +516,14 @@
 
     /* numeric coloring helpers */
     .excel-table td.excel-number.is-negative { color: var(--neg-red); }
-
-    /* ✅ NEW: positive numeric helper (for variance columns) */
     .excel-table td.excel-number.is-positive { color: var(--pos-green); }
 
-    /* only totals row + only marked total-positive cells */
     .excel-table tr.excel-subtotal td.excel-number.total-positive,
     .excel-table tr.excel-total td.excel-number.total-positive {
       color: var(--pos-green);
     }
 
-    /* ✅ NEW: clickable project name in cover tables (no blue/underline) */
+    /* ✅ clickable project name in cover tables (no blue/underline) */
     .excel-link {
       color: inherit;
       text-decoration: none;
@@ -519,6 +535,16 @@
       color: inherit;
       text-decoration: none;
     }
+    
+    /* Entrata Box Score: match excel table body sizing */
+#leasingCard table td {
+  font-size: 0.9rem;
+}
+
+/* Optional: match header sizing too (if you have <th> rows in Entrata table) */
+#leasingCard table th {
+  font-size: 0.9rem;
+}
 
     /* GALLERY */
     .rendering-section {
@@ -658,55 +684,61 @@
 
       /* ==========================================================
          ✅ MOBILE-ONLY ORDER SHUFFLE (NON-COVER PAGES ONLY)
+         Updated to include Garrett Mesa-only extras.
          ========================================================== */
-
-      /* Only activate when JS marks the grid as a non-cover project */
       .main-grid.is-project {
         grid-template-columns: 1fr;
         grid-template-areas:
           "psu"
+          "weeklycac"
           "svu"
+          "smartpm"
           "ph"
           "cf"
-          "profit"
           "notes"
+          "asset"
+          "profit"
           "leasing"
           "gallery"
           "map";
       }
 
-      /* Flatten the left/right wrappers so their children become grid items */
       .main-grid.is-project .left-column,
       .main-grid.is-project .right-column {
         display: contents;
       }
 
-      /* Assign areas */
-      .main-grid.is-project #projectScheduleCard   { grid-area: psu; }
-      .main-grid.is-project #scheduleVarianceCard  { grid-area: svu; }
+      .main-grid.is-project #projectScheduleCard      { grid-area: psu; }
+      .main-grid.is-project #weeklyCACNotesCard       { grid-area: weeklycac; }
+      .main-grid.is-project #scheduleVarianceCard     { grid-area: svu; }
+      .main-grid.is-project #smartPMKeyMilestonesCard { grid-area: smartpm; }
+
       .main-grid.is-project #projectHealthCard     { grid-area: ph; }
       .main-grid.is-project #cashFlowCard          { grid-area: cf; }
 
-      .main-grid.is-project #profitSummaryCard { grid-area: profit; }
-      .main-grid.is-project #notesCard         { grid-area: notes; }
-      .main-grid.is-project #leasingCard       { grid-area: leasing; }
-      .main-grid.is-project #galleryCard       { grid-area: gallery; }
-      .main-grid.is-project #mapCard           { grid-area: map; }
+      .main-grid.is-project #notesCard             { grid-area: notes; }
+      .main-grid.is-project #assetManagementCard   { grid-area: asset; }
 
-      /* Ensure full width for all grid items in 1-col mobile */
+      .main-grid.is-project #profitSummaryCard     { grid-area: profit; }
+      .main-grid.is-project #leasingCard           { grid-area: leasing; }
+      .main-grid.is-project #galleryCard           { grid-area: gallery; }
+      .main-grid.is-project #mapCard               { grid-area: map; }
+
       .main-grid.is-project #projectScheduleCard,
+      .main-grid.is-project #weeklyCACNotesCard,
       .main-grid.is-project #scheduleVarianceCard,
+      .main-grid.is-project #smartPMKeyMilestonesCard,
       .main-grid.is-project #projectHealthCard,
       .main-grid.is-project #cashFlowCard,
-      .main-grid.is-project #profitSummaryCard,
       .main-grid.is-project #notesCard,
+      .main-grid.is-project #assetManagementCard,
+      .main-grid.is-project #profitSummaryCard,
       .main-grid.is-project #leasingCard,
       .main-grid.is-project #galleryCard,
       .main-grid.is-project #mapCard {
         grid-column: 1 / -1;
       }
 
-      /* Map sizing fix for mobile (prevents odd 95% inset look) */
       .main-grid.is-project #mapCard iframe {
         width: 100%;
         height: 100%;
@@ -751,10 +783,8 @@
     <div class="main-grid">
       <!-- ==========================================================
            ✅ COVER PAGE ONLY (tgcportfolio): 3 FULL-WIDTH EXCEL TABLES
-           These render ONLY on the landing page and do not touch Garrett Mesa.
            ========================================================== -->
 
-      <!-- ✅ FULL-WIDTH COVER TABLE #1 -->
       <div class="financial-section excel-card span-two" id="coverProjectHealthSummaryCard" style="display:none;">
         <div class="excel-card-header">
           <h4 class="excel-card-title" style="margin:0;">Project Health Summary</h4>
@@ -766,7 +796,6 @@
         </div>
       </div>
 
-      <!-- ✅ FULL-WIDTH COVER TABLE #2 -->
       <div class="financial-section excel-card span-two" id="coverCACVarianceOverviewCard" style="display:none;">
         <div class="excel-card-header">
           <h4 class="excel-card-title" style="margin:0;">CAC Variance Overview</h4>
@@ -778,7 +807,6 @@
         </div>
       </div>
 
-      <!-- ✅ FULL-WIDTH COVER TABLE #3 -->
       <div class="financial-section excel-card span-two" id="coverPortfolioLeasingUpdateCard" style="display:none;">
         <div class="excel-card-header">
           <h4 class="excel-card-title" style="margin:0;">Portfolio Leasing Update</h4>
@@ -798,8 +826,16 @@
         </div>
 
         <div class="excel-table-wrap">
-          <table class="excel-table" id="projectScheduleTable" aria-label="Project Schedule Update Table"></table>
+          <table class="excel-table" id="projectScheduleTable" aria-label="CAC Variance Update Table"></table>
         </div>
+      </div>
+
+      <!-- ✅ Garrett Mesa ONLY: Weekly CAC Notes (bulleted) -->
+      <div class="investment-highlights span-two" id="weeklyCACNotesCard" style="display:none;">
+        <div class="card-header">
+          <h4>Weekly CAC Notes</h4>
+        </div>
+        <ul id="weeklyCACNotesList"></ul>
       </div>
 
       <!-- ✅ FULL-WIDTH ROW #2 (PROJECT PAGES ONLY) -->
@@ -811,6 +847,18 @@
 
         <div class="excel-table-wrap">
           <table class="excel-table" id="scheduleVarianceTable" aria-label="Schedule Variance Update Table"></table>
+        </div>
+      </div>
+
+      <!-- ✅ Garrett Mesa ONLY: SmartPM Key Milestones (excel) -->
+      <div class="financial-section excel-card span-two" id="smartPMKeyMilestonesCard" style="display:none;">
+        <div class="excel-card-header">
+          <h4 class="excel-card-title" style="margin:0;">SmartPM Key Milestones</h4>
+          <div class="excel-card-badge" id="smartPMKeyMilestonesBadge" style="display:none;"></div>
+        </div>
+
+        <div class="excel-table-wrap">
+          <table class="excel-table" id="smartPMKeyMilestonesTable" aria-label="SmartPM Key Milestones Table"></table>
         </div>
       </div>
 
@@ -827,13 +875,25 @@
           </div>
         </div>
 
-        <!-- Leasing Activity (keeps exact markup & styling) -->
-        <div class="property-details" id="leasingCard">
-          <h4>Leasing Activity</h4>
+        <!-- Profit Summary moved to LEFT column -->
+        <div class="financial-section" id="profitSummaryCard" style="display:none;">
+          <div class="card-header">
+            <h4>Profit Summary &amp; GC Projections</h4>
+          </div>
+          <div class="financial-metrics"></div>
+        </div>
+
+        <!-- Entrata Box Score (badge in usual top-right spot) -->
+        <div class="property-details" id="leasingCard" style="display:none;">
+          <div class="card-header">
+            <h4>Entrata Box Score</h4>
+            <div class="excel-card-badge" id="entrataBoxScoreBadge" style="display:none;"></div>
+          </div>
           <table></table>
         </div>
 
-        <div class="rendering-section" id="galleryCard"></div>
+        <!-- DroneDeploy Integration (gallery) -->
+        <div class="rendering-section" id="galleryCard" style="display:none;"></div>
       </div>
 
       <div class="right-column">
@@ -848,17 +908,27 @@
           </div>
         </div>
 
-        <div class="financial-section" id="profitSummaryCard">
-          <h4>Profit Summary & GC Projections</h4>
-          <div class="financial-metrics"></div>
-        </div>
-
-        <div class="investment-highlights" id="notesCard">
-          <h4>Notes & Updates</h4>
+        <!-- Notes & Updates directly under Cash Flow -->
+        <div class="investment-highlights" id="notesCard" style="display:none;">
+          <div class="card-header">
+            <h4>Health Notes &amp; Updates</h4>
+          </div>
           <ul></ul>
         </div>
 
-        <div class="map-section" id="mapCard">
+        <!-- Asset Management Tracker (excel) -->
+        <div class="financial-section excel-card" id="assetManagementCard" style="display:none;">
+          <div class="excel-card-header">
+            <h4 class="excel-card-title" style="margin:0;">Asset Management Tracker</h4>
+            <div class="excel-card-badge" id="assetManagementBadge" style="display:none;"></div>
+          </div>
+          <div class="excel-table-wrap">
+            <table class="excel-table" id="assetManagementTable" aria-label="Asset Management Tracker Table"></table>
+          </div>
+        </div>
+
+        <!-- Map under Asset Management Tracker -->
+        <div class="map-section" id="mapCard" style="display:none;">
           <iframe allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
@@ -869,31 +939,17 @@
 /* ============================================================
    ✅ DroneDeploy CONFIG — PASTE YOUR API KEY HERE (TEMP)
    ============================================================ */
-const DRONEDEPLOY_API_KEY = "3164868b7ddd4b9fa8bd9f9307cdba16"; // <-- you asked "where does the API go?" — right here.
+const DRONEDEPLOY_API_KEY = "3164868b7ddd4b9fa8bd9f9307cdba16"; // <-- API key goes here
 const DRONEDEPLOY_GRAPHQL_ENDPOINT = "https://www.dronedeploy.com/graphql";
 const DRONEDEPLOY_REFRESH_MS = 60 * 60 * 1000; // every hour
 
 /* ============================================================
-   ✅ Entrata CONFIG (IMPORTANT)
-   ============================================================
-   Your Entrata "Request" you shared is an RPC payload (getReportData r2).
-   Entrata will have a specific endpoint URL for your environment.
-   Put it here once you have it (or point to a proxy URL that calls Entrata).
-
-   BEST PRACTICE (recommended): use a small proxy (Cloudflare Worker, etc.)
-   so you do NOT embed Entrata credentials in public HTML and you avoid CORS.
-
-   This script supports BOTH:
-   - Direct call (if CORS allows) using basic auth (NOT recommended)
-   - Proxy call (recommended) where your proxy handles auth and returns JSON
+   ✅ Entrata CONFIG
    ============================================================ */
-
-// If you are using a proxy, set ENTRATA_ENDPOINT to your proxy URL.
-// If you are calling Entrata directly, set ENTRATA_ENDPOINT to your Entrata API endpoint URL.
-const ENTRATA_ENDPOINT = "https://api.thegarrettcompanies.entrata.com.com/r2"; // e.g. "https://YOURDOMAIN.entrata.com/api/some_endpoint" OR "https://your-worker.yourdomain.workers.dev/entrata"
+const ENTRATA_ENDPOINT = "https://api.thegarrettcompanies.entrata.com.com/r2";
 
 /* ============================================================
-   Existing projects data (UNCHANGED except Leasing Activity automation config)
+   Existing projects data
    ============================================================ */
 const projects = {
   tgcportfolio: {
@@ -927,10 +983,6 @@ const projects = {
       "Avg Exit Cap Rate":"5.44%"
     },
 
-    /* ============================================================
-       ✅ COVER PAGE TABLES (ONLY used when key === "tgcportfolio")
-       Placeholder values – you said you'll manually update figures.
-       ============================================================ */
     coverProjectHealthSummary: {
       badge: "As of 2/17/2026",
       columns: ["Project", "Original Profit", "Actual Profit", "Total Variance", "Remaining Contingency", "GC Risk", "% Cash Collected", "Do Not Touch", "Construction Fee", "Development Fee"],
@@ -1005,18 +1057,7 @@ const projects = {
     renderings: [
       "https://static.wixstatic.com/media/4f7dd4_1e48e68112824b76b71f1fa47a8b43bf~mv2.png",
       "https://static.wixstatic.com/media/4f7dd4_5f30edd663e04eda872bdb5db4152cce~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_489ff7a8f3ad48c8a4a4409c5ea6607d~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_9b5826a8a90747b6a9a29c2b19682cda~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_1e7b8725e1f841098a72a52e655e912e~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_e3ab53f4887447e5b853a03fd0e0a53b~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_241b8800928249a1a131202c2e0ad4b3~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_2f59c04d71564f878ae8f8b3c8739d6a~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_aa75cd1f6b7e491e87dc93b653ddb5ce~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_ef92d125193e495da4c9c705e16b3f70~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_31852ee46c5f40bfba99ffb16fe45dc4~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_01ab8c13e40543e1bd6bd6e28d0ef782~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_b8e32391bceb4e59b327f3fc09e2a930~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_0422c0beac5b4789ade901ae53f41c95~mv2.jpg"
+      "https://static.wixstatic.com/media/4f7dd4_489ff7a8f3ad48c8a4a4409c5ea6607d~mv2.png"
     ],
     mapUrl: "https://www.google.com/maps/d/u/0/embed?mid=19g9mO03d0QsNHdzPcYec8Q9HymE_fPc&ehbc=2E312F&noprof=1"
   },
@@ -1031,15 +1072,50 @@ const projects = {
       "$356k deferred Dev fee"
     ],
 
-    /* ============================================================
-       ✅ Leasing Activity (AUTOMATED via Entrata Box Score)
-       - Shows TOTALS only (not unit-type rows)
-       - Excludes "Excluded Units" by design
-       - Keeps same Leasing Activity card/table; we just populate values.
-       ============================================================ */
+    weeklyCACNotes: [
+      "Add weekly CAC commentary here.",
+      "Add weekly CAC commentary here.",
+      "Add weekly CAC commentary here."
+    ],
+
+    smartPMKeyMilestones: {
+      badge: "As of 2/17/2026",
+      columns: ["Milestone", "Current Date", "Prior Date", "Variance", "Notes"],
+      rows: [
+        { label: "Example Milestone", values: ["2/29/2028", "2/29/2028", "0", "—"] },
+        { label: "Example Milestone", values: ["2/29/2028", "2/29/2028", "0", "—"] },
+        { label: "Example Milestone", values: ["2/29/2028", "2/29/2028", "0", "—"] },
+        { label: "Example Milestone", values: ["2/29/2028", "2/29/2028", "0", "—"] },
+        { label: "Example Milestone", values: ["2/29/2028", "2/29/2028", "0", "—"] }
+      ]
+    },
+
+    assetManagementTracker: {
+      badge: "As of 2/17/2026",
+      columns: ["Category", "Owner", "Status", "Next Action", "Due Date"],
+      rows: [
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
+        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] }
+      ]
+    },
+
     leasingActivity: {
-      // Order + labels of rows to render in the Leasing Activity table
-      // (keeps your card/table formatting identical; only values update)
       rows: [
         { label: "Average SQFT", key: "avg_square_feet", format: "number2" },
         { label: "Average Market Rent", key: "avg_market_rent", format: "currency2" },
@@ -1060,23 +1136,14 @@ const projects = {
         { label: "Vacant Unrented", key: "vacant_unrented_units", format: "int" },
         { divider: true },
 
-        // Percentages (computed from totals / weighted averages)
         { label: "Occupied %", key: "percent_occupied", format: "percent2" },
         { label: "Leased %", key: "percent_leased", format: "percent2" },
         { label: "Trend %", key: "avg_not_exposed_leased_units", format: "percent2" },
         { label: "Exposure %", key: "avg_exposure", format: "percent2" }
       ],
-
-      // How often to refresh while viewing Garrett Mesa
-      refreshMs: 15 * 60 * 1000, // 15 minutes
+      refreshMs: 15 * 60 * 1000,
     },
 
-    /* ============================================================
-       ✅ Entrata Box Score request payload (your provided request)
-       Notes:
-       - You still must set ENTRATA_ENDPOINT above (proxy recommended).
-       - Basic auth in-browser is NOT recommended. Proxy is best.
-       ============================================================ */
     entrataBoxScore: {
       requestId: 15,
       methodName: "getReportData",
@@ -1096,16 +1163,12 @@ const projects = {
           data_set: ""
         }
       },
-
-      // If you call Entrata directly (NOT recommended), fill these.
-      // If you use a proxy, you can leave these blank and let the proxy handle auth.
       basicAuth: {
-        username: "username", // <-- optional (proxy recommended)
-        password: "password"  // <-- optional (proxy recommended)
+        username: "username",
+        password: "password"
       }
     },
 
-    // (kept) other sections:
     financials: {
       "Original Profit": { value: "$11.3M", details: "<b>Construction:</b> $7,379,477.19<br><b>Development:</b> $3,942,527.00<br>" },
       "Actual Profit": { value: "$12.2M", details: "<b>Construction:</b> $8,255,071.88<br><b>Development:</b> $3,942,527.00<br>" },
@@ -1175,33 +1238,17 @@ const projects = {
       rows: [
         { label: "Clubhouse Turnover", values: ["12/16/2026", "12/16/2026", "0"] },
         { label: "Building 1 - TCO", values: ["10/26/2027", "10/26/2027", "0"] },
-        { label: "Building 2 - TCO", values: ["12/29/2027", "12/29/2027", "0"] },
-        { label: "Building 3 - TCO", values: ["2/29/2028", "2/29/2028", "0"] },
-        { label: "Building 4 - TCO", values: ["4/23/2027", "4/23/2027", "0"] },
-        { label: "Building 5 - TCO", values: ["6/24/2027", "6/24/2027", "0"] },
-        { label: "Building 6 - TCO", values: ["8/25/2027", "8/25/2027", "0"] },
-        { label: "Mail Kiosk", values: ["12/16/2026", "12/16/2026", "0"] },
-        { label: "Detached Garage", values: ["12/29/2027", "12/29/2027", "0"] },
-        { label: "Pool Building", values: ["12/16/2026", "12/16/2026", "0"] },
         { label: "Final CO", values: ["2/29/2028", "2/29/2028", "0"] }
       ]
     },
 
-    /* fallback images if DroneDeploy fails */
     renderings: [
       "https://static.wixstatic.com/media/4f7dd4_b8e32391bceb4e59b327f3fc09e2a930~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_61f93fdbb7004815b0c56a7e0aacf182~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_aa3fda402a4a4ce3b1376dd049736630~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_5feff0f060c44971ab765afd97cf154c~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_994344504b3049f5880bbdcac033b485~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_4529f002c028492cb4897415f29a44d7~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_df974da00f484a57b408d866c9cd8cdb~mv2.png",
-      "https://static.wixstatic.com/media/4f7dd4_03e2b5c87a014bef9f0dec286959a3ef~mv2.png"
+      "https://static.wixstatic.com/media/4f7dd4_61f93fdbb7004815b0c56a7e0aacf182~mv2.png"
     ],
 
     mapUrl: "https://www.google.com/maps?q=33.391203,-111.727545&output=embed",
 
-    /* ✅ DroneDeploy hook (your real project id + consistent plan name) */
     droneDeploy: {
       projectId: "Project:66b0ce0d79e6b866bc965f27",
       photoGroupName: "Photo Group #1"
@@ -1340,7 +1387,7 @@ function parseMoneyishToNumber(val) {
   return negative ? -out : out;
 }
 
-/* ✅ NEW: parse generic numbers (for things like "0", "14", "-7", "(12)") */
+/* ✅ parse generic numbers (for things like "0", "14", "-7", "(12)") */
 function parseGenericToNumber(val) {
   if (val === null || val === undefined) return null;
   let s = String(val).trim();
@@ -1357,7 +1404,6 @@ function parseGenericToNumber(val) {
     s = s.replace(/^-+/,"");
   }
 
-  // remove commas + percent signs + stray spaces
   s = s.replace(/,/g, "").replace(/%/g, "").trim();
 
   const num = parseFloat(s);
@@ -1386,17 +1432,15 @@ function attachExcelWrapObservers(scope = document) {
   scope.querySelectorAll(".excel-table-wrap").forEach(el => __excelRO.observe(el));
 }
 
-/* ✅ NEW: internal navigation from cover-table project links */
+/* ✅ internal navigation from cover-table project links */
 function navigateToProject(projectKey, scrollToTop = true) {
   if (!projects[projectKey]) return;
 
-  // Set state dropdown appropriately (or just "all" for simplicity)
   if (stateSelector) {
     stateSelector.value = "all";
     stateSelector.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  // Ensure option exists, then select it
   if (selector) {
     let opt = selector.querySelector(`option[value="${projectKey}"]`);
     if (!opt) {
@@ -1410,8 +1454,7 @@ function navigateToProject(projectKey, scrollToTop = true) {
   if (scrollToTop) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-/* ✅ UPDATED: adds green/red coloring for specific variance columns on cover tables
-   + makes "Garrett Mesa" clickable (cover tables only) */
+/* cover-table variance coloring + clickable Garrett Mesa */
 function renderExcelTable(targetTableEl, config) {
   if (!targetTableEl) return;
 
@@ -1425,7 +1468,6 @@ function renderExcelTable(targetTableEl, config) {
 
   const isCoverTable = /^cover/i.test(targetTableEl.id || "");
 
-  // Identify special variance columns by header name (case-insensitive)
   const norm = (s) => String(s || "").trim().toLowerCase();
   const varianceColIdxs = new Set(
     cols
@@ -1454,7 +1496,6 @@ function renderExcelTable(targetTableEl, config) {
     const labelText = (r && r.label) ? String(r.label).trim() : "";
     const labelSafe = escapeHtml(labelText);
 
-    // ✅ clickable project name only on cover tables and only for Garrett Mesa
     const labelCellHtml =
       (isCoverTable && /^garrett mesa$/i.test(labelText))
         ? `<a href="#" class="excel-link" data-project="garrettmesa">${labelSafe}</a>`
@@ -1466,25 +1507,21 @@ function renderExcelTable(targetTableEl, config) {
 
     const rowClass = (isTotal ? "excel-total" : (isSubtotal ? "excel-subtotal" : ""));
     const isTotalsRow = (isTotal || isSubtotal);
-
     const greenEligibleLabel = /^(Construction Total|Companies Total|Grand Total)$/i.test(labelText);
 
     return `
       <tr class="${rowClass}">
         <td class="excel-row-label ${isMuted ? "excel-muted" : ""}">${labelCellHtml}</td>
         ${padded.map((v, idx) => {
-          const colIndex = idx + 1; // because first column is label
+          const colIndex = idx + 1;
           const classList = ["excel-number"];
           if (isMuted) classList.push("excel-muted");
 
-          // existing red for paren-negative everywhere
           const parenNeg = isParenNegative(v);
           if (parenNeg) classList.push("is-negative");
 
-          // existing "total-positive" behavior (kept exactly)
           if (isTotalsRow && greenEligibleLabel && isPositiveNumberish(v)) classList.push("total-positive");
 
-          // ✅ variance column coloring (green if >0, red if <0)
           if (varianceColIdxs.has(colIndex)) {
             let n = parseMoneyishToNumber(v);
             if (typeof n !== "number") n = parseGenericToNumber(v);
@@ -1513,7 +1550,7 @@ function setCardVisibility(cardId, isVisible) {
   el.style.display = isVisible ? "flex" : "none";
 }
 
-/* ✅ Click handler for cover-table project links */
+/* cover-table link click */
 content.addEventListener("click", (e) => {
   const a = e.target.closest && e.target.closest("a.excel-link[data-project]");
   if (!a) return;
@@ -1526,9 +1563,7 @@ content.addEventListener("click", (e) => {
 /* ============================================================
    ✅ Entrata Helpers (Box Score Totals)
    ============================================================ */
-
-/* In-memory cache so we don’t spam Entrata while clicking around */
-const __entrataCache = new Map(); // key -> { ts, payload, totals }
+const __entrataCache = new Map();
 let __entrataIntervalHandle = null;
 
 function safeNumber(v) {
@@ -1586,7 +1621,6 @@ function getEntrataBasicAuthHeader(project) {
   return `Basic ${token}`;
 }
 
-/* Fetch Entrata Box Score JSON */
 async function fetchEntrataBoxScore(project) {
   if (!ENTRATA_ENDPOINT) {
     throw new Error("ENTRATA_ENDPOINT is not set. Add your Entrata endpoint or proxy URL.");
@@ -1617,7 +1651,6 @@ async function fetchEntrataBoxScore(project) {
   return json;
 }
 
-/* Extract the availability array from the response structure you provided */
 function extractAvailabilityRows(entrataJson) {
   const availability =
     entrataJson?.response?.result?.[0]?.reportData?.availability;
@@ -1625,10 +1658,8 @@ function extractAvailabilityRows(entrataJson) {
   return Array.isArray(availability) ? availability : [];
 }
 
-/* Compute TOTALS only (no unit-type breakdown shown) */
 function computeBoxScoreTotals(availabilityRows) {
   const totals = {
-    // sums
     total_units: 0,
     excluded_units: 0,
     total_rentable_units: 0,
@@ -1641,20 +1672,18 @@ function computeBoxScoreTotals(availabilityRows) {
     vacant_rented_units: 0,
     vacant_unrented_units: 0,
 
-    // weighted averages (by total_units, fallback to rentable if needed)
     avg_square_feet: null,
     avg_market_rent: null,
     scheduled_rent: null,
 
-    // computed / weighted percentages
     percent_occupied: null,
     percent_leased: null,
     avg_not_exposed_leased_units: null,
     avg_exposure: null
   };
 
-  let wUnits = 0;     // weight for averages (total_units)
-  let wRentable = 0;  // weight for percent fields (rentable units)
+  let wUnits = 0;
+  let wRentable = 0;
 
   let sumSqFt = 0;
   let sumMarket = 0;
@@ -1681,7 +1710,6 @@ function computeBoxScoreTotals(availabilityRows) {
     totals.vacant_rented_units += safeNumber(r.vacant_rented_units);
     totals.vacant_unrented_units += safeNumber(r.vacant_unrented_units);
 
-    // Averages weighted by total_units (closest to your "total portfolio-style" rollup)
     if (tu > 0) {
       wUnits += tu;
       sumSqFt += safeNumber(r.avg_square_feet) * tu;
@@ -1689,7 +1717,6 @@ function computeBoxScoreTotals(availabilityRows) {
       sumScheduled += safeNumber(r.scheduled_rent) * tu;
     }
 
-    // Percent fields weighted by rentable units (more correct for occupancy/lease)
     if (tr > 0) {
       wRentable += tr;
       sumPctOcc += safeNumber(r.percent_occupied) * tr;
@@ -1711,7 +1738,6 @@ function computeBoxScoreTotals(availabilityRows) {
     totals.avg_not_exposed_leased_units = sumPctTrend / wRentable;
     totals.avg_exposure = sumPctExposure / wRentable;
   } else if (totals.total_rentable_units > 0) {
-    // Fallback computation from counts if percents were missing
     totals.percent_occupied = totals.occupied_units / totals.total_rentable_units;
     totals.percent_leased = (totals.occupied_units + totals.vacant_rented_units + totals.notice_rented_units) / totals.total_rentable_units;
     totals.avg_exposure = 1 - (totals.percent_leased || 0);
@@ -1721,7 +1747,6 @@ function computeBoxScoreTotals(availabilityRows) {
   return totals;
 }
 
-/* Render Leasing Activity table using ordered rows config (keeps same table markup/style) */
 function renderLeasingActivityTable(tableEl, project, totalsOrNull) {
   if (!tableEl) return;
 
@@ -1761,10 +1786,7 @@ function renderLeasingActivityTable(tableEl, project, totalsOrNull) {
 }
 
 /* ============================================================
-   ✅ DroneDeploy GraphQL helpers (browser-based)
-   Notes:
-   - If CORS is blocked, this will throw. We catch + fallback.
-   - Auth uses Authorization: Bearer <api_key> as per DroneDeploy docs.
+   ✅ DroneDeploy GraphQL helpers (unchanged)
    ============================================================ */
 async function ddGraphQL(query, variables = {}) {
   if (!DRONEDEPLOY_API_KEY || DRONEDEPLOY_API_KEY.includes("PASTE_")) {
@@ -1793,7 +1815,6 @@ async function ddGraphQL(query, variables = {}) {
   return json.data;
 }
 
-/* Fetch latest ProgressPhotoPlan id by project + plan name, using dateCreation if available */
 async function ddGetLatestPhotoGroupPlanId(projectId, photoGroupName) {
   const q = `
     query GetProjectPlans($projectId: ID!) {
@@ -1822,7 +1843,6 @@ async function ddGetLatestPhotoGroupPlanId(projectId, photoGroupName) {
 
   if (!candidates.length) return null;
 
-  // Prefer plan.dateCreation if available; otherwise fallback to "first candidate"
   const withDates = candidates
     .map(n => ({ id: n.id, date: n.dateCreation ? new Date(n.dateCreation).getTime() : null }))
     .sort((a, b) => (b.date || 0) - (a.date || 0));
@@ -1830,7 +1850,6 @@ async function ddGetLatestPhotoGroupPlanId(projectId, photoGroupName) {
   return withDates[0]?.id || null;
 }
 
-/* Fetch photos for a ProgressPhotoPlan */
 async function ddGetProgressPhotoPlanPhotos(planId, first = 30) {
   const q = `
     query GetProgressPhotos($planId: ID!, $first: Int!) {
@@ -1858,7 +1877,6 @@ async function ddGetProgressPhotoPlanPhotos(planId, first = 30) {
     .map(e => e?.node)
     .filter(p => p && p.url);
 
-  // Determine most recent photo dateCreation
   const latestMs = photos.reduce((max, p) => {
     const t = p.dateCreation ? new Date(p.dateCreation).getTime() : 0;
     return t > max ? t : max;
@@ -1870,11 +1888,8 @@ async function ddGetProgressPhotoPlanPhotos(planId, first = 30) {
   };
 }
 
-/* Cache so switching projects doesn't spam API */
 const __ddCache = {
-  // key: `${projectId}|${photoGroupName}` -> { planId, ts }
   latestPlan: new Map(),
-  // key: planId -> { photos, latestDateISO, ts }
   photosByPlan: new Map()
 };
 
@@ -1912,9 +1927,6 @@ async function ddLoadLatestGalleryForProject(project, renderingDiv) {
   };
 }
 
-/* ============================================================
-   Gallery renderer (same UX; just takes an array of urls)
-   ============================================================ */
 function renderGallery(renderingDiv, imageUrls, badgeText = "", statusText = "") {
   const safeUrls = Array.isArray(imageUrls) ? imageUrls.filter(Boolean) : [];
 
@@ -1950,7 +1962,6 @@ function renderGallery(renderingDiv, imageUrls, badgeText = "", statusText = "")
     }
   }
 
-  // wire arrows + slideshow
   slideIndex = 1;
   showSlides(slideIndex);
 
@@ -1962,6 +1973,16 @@ function renderGallery(renderingDiv, imageUrls, badgeText = "", statusText = "")
 
 let __ddIntervalHandle = null;
 
+function renderBulletsIntoList(listEl, items) {
+  if (!listEl) return;
+  listEl.innerHTML = "";
+  (items || []).forEach(t => {
+    const li = document.createElement("li");
+    li.textContent = t;
+    listEl.appendChild(li);
+  });
+}
+
 async function renderProject(key) {
   const project = projects[key];
   if (!project) return;
@@ -1969,45 +1990,36 @@ async function renderProject(key) {
   const todayMDY = getTodayMDY();
   const isCover = (key === "tgcportfolio");
 
-  /* Page mode hook for CSS (cover vs non-cover) */
   const mainGrid = content.querySelector(".main-grid");
   if (mainGrid) {
     mainGrid.classList.toggle("is-portfolio", isCover);
     mainGrid.classList.toggle("is-project", !isCover);
   }
 
-  /* Header */
   content.querySelector(".project-header h2").textContent = project.name;
   content.querySelector(".project-header h3").textContent =
     isCover ? `Project Health, CAC Variance, & More` : project.location;
 
-  /* ============================================================
-     ✅ COVER PAGE: show ONLY the 3 excel tables, hide everything else
-     ============================================================ */
+  /* COVER cards */
   setCardVisibility("coverProjectHealthSummaryCard", isCover);
   setCardVisibility("coverCACVarianceOverviewCard", isCover);
   setCardVisibility("coverPortfolioLeasingUpdateCard", isCover);
 
   if (isCover) {
-    // Hide all project/detail sections on cover (does not alter their markup/data)
     setCardVisibility("projectScheduleCard", false);
+    setCardVisibility("weeklyCACNotesCard", false);
     setCardVisibility("scheduleVarianceCard", false);
+    setCardVisibility("smartPMKeyMilestonesCard", false);
+
     setCardVisibility("projectHealthCard", false);
     setCardVisibility("cashFlowCard", false);
+    setCardVisibility("profitSummaryCard", false);
+    setCardVisibility("leasingCard", false);
+    setCardVisibility("galleryCard", false);
+    setCardVisibility("notesCard", false);
+    setCardVisibility("assetManagementCard", false);
+    setCardVisibility("mapCard", false);
 
-    const profit = document.getElementById("profitSummaryCard");
-    const notes = document.getElementById("notesCard");
-    const leasing = document.getElementById("leasingCard");
-    const gallery = document.getElementById("galleryCard");
-    const map = document.getElementById("mapCard");
-
-    if (profit) profit.style.display = "none";
-    if (notes) notes.style.display = "none";
-    if (leasing) leasing.style.display = "none";
-    if (gallery) gallery.style.display = "none";
-    if (map) map.style.display = "none";
-
-    // Render the three cover tables (Excel styling is shared)
     const c1 = project.coverProjectHealthSummary;
     const c2 = project.coverCACVarianceOverview;
     const c3 = project.coverPortfolioLeasingUpdate;
@@ -2038,61 +2050,84 @@ async function renderProject(key) {
       renderExcelTable(c3Table, c3);
     } else if (c3Table) c3Table.innerHTML = "";
 
-    // Keep scrollbar padding accurate for these tables
     updateExcelScrollbarPadding(content);
     attachExcelWrapObservers(content);
 
-    // Stop any DroneDeploy refresh loop if user navigated back to cover
-    if (__ddIntervalHandle) {
-      clearInterval(__ddIntervalHandle);
-      __ddIntervalHandle = null;
-    }
+    if (__ddIntervalHandle) { clearInterval(__ddIntervalHandle); __ddIntervalHandle = null; }
+    if (__entrataIntervalHandle) { clearInterval(__entrataIntervalHandle); __entrataIntervalHandle = null; }
 
-    // Stop any Entrata refresh loop if user navigated back to cover
-    if (__entrataIntervalHandle) {
-      clearInterval(__entrataIntervalHandle);
-      __entrataIntervalHandle = null;
-    }
-
-    // No further rendering needed for cover
     return;
   }
 
-  /* ============================================================
-     ✅ PROJECT PAGES (UNCHANGED BEHAVIOR)
-     ============================================================ */
+  /* PROJECT PAGES */
+  setCardVisibility("projectScheduleCard", true);
+  setCardVisibility("scheduleVarianceCard", true);
+  setCardVisibility("projectHealthCard", true);
+  setCardVisibility("cashFlowCard", true);
+  setCardVisibility("profitSummaryCard", true);
+  setCardVisibility("leasingCard", true);
+  setCardVisibility("galleryCard", true);
+  setCardVisibility("notesCard", true);
+  setCardVisibility("assetManagementCard", true);
+  setCardVisibility("mapCard", true);
 
-  /* Highlights */
-  const highlightsUl = content.querySelector(".investment-highlights ul");
-  highlightsUl.innerHTML = "";
-  (project.highlights || []).forEach(item => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    highlightsUl.appendChild(li);
-  });
+  /* Garrett Mesa-only extras */
+  const isGarrettMesa = (key === "garrettmesa");
+  setCardVisibility("weeklyCACNotesCard", isGarrettMesa);
+  setCardVisibility("smartPMKeyMilestonesCard", isGarrettMesa);
 
-  /* ============================================================
-     ✅ Leasing Activity (Entrata Box Score Totals)
-     - Same card/table
-     - Now pulls from Entrata and rolls up totals across unit types
-     - Excluded units NOT shown (as requested)
-     ============================================================ */
-  const leasingTableEl = content.querySelector(".property-details table");
-  let leasingTotals = null;
+  if (isGarrettMesa) {
+    renderBulletsIntoList(document.getElementById("weeklyCACNotesList"), project.weeklyCACNotes || []);
 
-  // Clear any prior Entrata refresh loop
-  if (__entrataIntervalHandle) {
-    clearInterval(__entrataIntervalHandle);
-    __entrataIntervalHandle = null;
+    const smCfg = project.smartPMKeyMilestones;
+    const smTable = document.getElementById("smartPMKeyMilestonesTable");
+    const smBadge = document.getElementById("smartPMKeyMilestonesBadge");
+    if (smCfg && smCfg.columns && smCfg.rows) {
+      if (smBadge && smCfg.badge) { smBadge.style.display = "inline-block"; smBadge.textContent = smCfg.badge; }
+      else if (smBadge) smBadge.style.display = "none";
+      renderExcelTable(smTable, smCfg);
+    } else {
+      if (smTable) smTable.innerHTML = "";
+      if (smBadge) smBadge.style.display = "none";
+    }
   }
 
-  const shouldUseEntrata = (key === "garrettmesa") && !!project.entrataBoxScore;
+  /* Notes & Updates bullets */
+  const notesUl = document.querySelector("#notesCard ul");
+  if (notesUl) {
+    notesUl.innerHTML = "";
+    (project.highlights || []).forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      notesUl.appendChild(li);
+    });
+  }
+
+  /* Leasing Activity + Entrata badge */
+  const leasingTableEl = document.querySelector("#leasingCard table");
+  const entrataBadgeEl = document.getElementById("entrataBoxScoreBadge");
+
+  if (__entrataIntervalHandle) { clearInterval(__entrataIntervalHandle); __entrataIntervalHandle = null; }
+
+  const shouldUseEntrata = isGarrettMesa && !!project.entrataBoxScore;
+
+  // Always set badge “in the usual location” for Garrett Mesa.
+  if (entrataBadgeEl) {
+    if (shouldUseEntrata) {
+      entrataBadgeEl.style.display = "inline-block";
+      entrataBadgeEl.textContent = `As of ${todayMDY}`;
+    } else {
+      entrataBadgeEl.style.display = "none";
+    }
+  }
 
   const loadAndRenderEntrataLeasing = async () => {
     try {
       const cacheKey = `entrata:box_score:${key}`;
       const refreshMs = project?.leasingActivity?.refreshMs || (15 * 60 * 1000);
       const cached = __entrataCache.get(cacheKey);
+
+      let leasingTotals = null;
 
       if (cached && (Date.now() - cached.ts) < refreshMs) {
         leasingTotals = cached.totals || null;
@@ -2108,18 +2143,13 @@ async function renderProject(key) {
       return true;
     } catch (err) {
       console.error("[Entrata] Leasing Activity load failed:", err);
-
-      // If Entrata fails, still render the table (shows dashes)
       renderLeasingActivityTable(leasingTableEl, project, null);
       return false;
     }
   };
 
   if (shouldUseEntrata) {
-    // initial render
     const ok = await loadAndRenderEntrataLeasing();
-
-    // background refresh while user is on this project
     if (ok) {
       const refreshMs = project?.leasingActivity?.refreshMs || (15 * 60 * 1000);
       __entrataIntervalHandle = setInterval(async () => {
@@ -2127,12 +2157,10 @@ async function renderProject(key) {
       }, refreshMs);
     }
   } else {
-    // For any non-Entrata project pages, preserve behavior:
-    // render empty (or could render dashes). Keeping safe:
     if (leasingTableEl) leasingTableEl.innerHTML = "";
   }
 
-  /* Financial Metrics */
+  /* Financial Metrics (Profit Summary) */
   const metricsDiv = content.querySelector(".financial-metrics");
   metricsDiv.innerHTML = "";
 
@@ -2143,7 +2171,6 @@ async function renderProject(key) {
     const value = typeof info === "object" ? info.value : info;
     const details = (typeof info === "object" && info.details) ? info.details : null;
 
-    // Variance special rules (value color + faint overlay)
     const isVariance = String(label).trim().toLowerCase() === "variance";
     let varianceClass = "";
 
@@ -2177,17 +2204,13 @@ async function renderProject(key) {
   /* Project Health */
   const phTable = document.getElementById("projectHealthTable");
   const phBadge = document.getElementById("projectHealthUnitsBadge");
-
   if (project.projectHealth && project.projectHealth.columns && project.projectHealth.rows) {
-    setCardVisibility("projectHealthCard", true);
-
     if (project.projectHealth.unitsBadge) {
       phBadge.style.display = "inline-block";
       phBadge.textContent = project.projectHealth.unitsBadge;
     } else {
       phBadge.style.display = "none";
     }
-
     renderExcelTable(phTable, project.projectHealth);
   } else {
     setCardVisibility("projectHealthCard", false);
@@ -2197,26 +2220,20 @@ async function renderProject(key) {
   /* Cash Flow */
   const cfTable = document.getElementById("cashFlowTable");
   const cfBadge = document.getElementById("cashFlowAsOfBadge");
-
   if (project.cashFlow && project.cashFlow.columns && project.cashFlow.rows) {
-    setCardVisibility("cashFlowCard", true);
-
     cfBadge.style.display = "inline-block";
     cfBadge.textContent = `As of ${todayMDY}`;
-
     renderExcelTable(cfTable, project.cashFlow);
   } else {
     setCardVisibility("cashFlowCard", false);
     if (cfTable) cfTable.innerHTML = "";
   }
 
-  /* Project Schedule Update */
+  /* CAC Variance Update */
   const psTable = document.getElementById("projectScheduleTable");
   const psBadge = document.getElementById("projectScheduleBadge");
   const psCfg = project.projectScheduleUpdate;
-
   if (psCfg && psCfg.columns && psCfg.rows) {
-    setCardVisibility("projectScheduleCard", true);
     if (psCfg.badge) {
       psBadge.style.display = "inline-block";
       psBadge.textContent = psCfg.badge;
@@ -2234,9 +2251,7 @@ async function renderProject(key) {
   const svTable = document.getElementById("scheduleVarianceTable");
   const svBadge = document.getElementById("scheduleVarianceBadge");
   const svCfg = project.scheduleVarianceUpdate;
-
   if (svCfg && svCfg.columns && svCfg.rows) {
-    setCardVisibility("scheduleVarianceCard", true);
     if (svCfg.badge) {
       svBadge.style.display = "inline-block";
       svBadge.textContent = svCfg.badge;
@@ -2250,28 +2265,38 @@ async function renderProject(key) {
     if (svBadge) svBadge.style.display = "none";
   }
 
-  /* Update scrollbar padding AFTER all tables render */
+  /* Asset Management Tracker */
+  const amTable = document.getElementById("assetManagementTable");
+  const amBadge = document.getElementById("assetManagementBadge");
+  const amCfg = project.assetManagementTracker;
+  if (amCfg && amCfg.columns && amCfg.rows) {
+    if (amBadge && amCfg.badge) { amBadge.style.display = "inline-block"; amBadge.textContent = amCfg.badge; }
+    else if (amBadge) amBadge.style.display = "none";
+    renderExcelTable(amTable, amCfg);
+  } else {
+    setCardVisibility("assetManagementCard", false);
+    if (amTable) amTable.innerHTML = "";
+    if (amBadge) amBadge.style.display = "none";
+  }
+
   updateExcelScrollbarPadding(content);
   attachExcelWrapObservers(content);
 
   /* Logo-to-home behavior */
   function goToFullPortfolio(scrollToTop = true) {
-    const stateSelectorEl = document.getElementById("stateSelector");
-    const projectSelectorEl = document.getElementById("projectSelector");
-
-    if (stateSelectorEl) {
-      stateSelectorEl.value = "all";
-      stateSelectorEl.dispatchEvent(new Event("change", { bubbles: true }));
+    if (stateSelector) {
+      stateSelector.value = "all";
+      stateSelector.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
-    if (projectSelectorEl) {
-      let opt = projectSelectorEl.querySelector('option[value="tgcportfolio"]');
+    if (selector) {
+      let opt = selector.querySelector('option[value="tgcportfolio"]');
       if (!opt) {
         opt = new Option("Full TGC Portfolio", "tgcportfolio");
-        projectSelectorEl.insertBefore(opt, projectSelectorEl.firstChild);
+        selector.insertBefore(opt, selector.firstChild);
       }
-      projectSelectorEl.value = "tgcportfolio";
-      projectSelectorEl.dispatchEvent(new Event("change", { bubbles: true }));
+      selector.value = "tgcportfolio";
+      selector.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
     if (typeof renderProject === "function") renderProject("tgcportfolio");
@@ -2280,45 +2305,14 @@ async function renderProject(key) {
 
   const logoDesktop = document.getElementById("logoLinkDesktop");
   const logoMobile = document.getElementById("logoLinkMobile");
+  if (logoDesktop) logoDesktop.onclick = (e) => { e.preventDefault(); goToFullPortfolio(); };
+  if (logoMobile) logoMobile.onclick = (e) => { e.preventDefault(); goToFullPortfolio(); };
 
-  if (logoDesktop) {
-    logoDesktop.onclick = function(e) {
-      e.preventDefault();
-      goToFullPortfolio();
-    };
-  }
-  if (logoMobile) {
-    logoMobile.onclick = function(e) {
-      e.preventDefault();
-      goToFullPortfolio();
-    };
-  }
+  /* Gallery */
+  const renderingDiv = document.getElementById("galleryCard");
 
-  /* ============================================================
-     ✅ Rendering Gallery (DroneDeploy for Garrett Mesa, else default)
-     ============================================================ */
-  const renderingDiv = content.querySelector(".rendering-section");
+  if (__ddIntervalHandle) { clearInterval(__ddIntervalHandle); __ddIntervalHandle = null; }
 
-  // ensure project-only cards are visible again (in case coming from cover)
-  const profit = document.getElementById("profitSummaryCard");
-  const notes = document.getElementById("notesCard");
-  const leasing = document.getElementById("leasingCard");
-  const gallery = document.getElementById("galleryCard");
-  const map = document.getElementById("mapCard");
-
-  if (profit) profit.style.display = "flex";
-  if (notes) notes.style.display = "flex";
-  if (leasing) leasing.style.display = "flex";
-  if (gallery) gallery.style.display = "flex";
-  if (map) map.style.display = "flex";
-
-  // Stop any prior auto-refresh loop
-  if (__ddIntervalHandle) {
-    clearInterval(__ddIntervalHandle);
-    __ddIntervalHandle = null;
-  }
-
-  // Helper to load DroneDeploy and render gallery
   const loadDD = async () => {
     try {
       const dd = await ddLoadLatestGalleryForProject(project, renderingDiv);
@@ -2331,8 +2325,6 @@ async function renderProject(key) {
       return false;
     } catch (err) {
       console.error("[DroneDeploy] Gallery load failed:", err);
-
-      // Visible hint (does not break layout); still fallback images show
       const msg = String(err && err.message ? err.message : err);
       renderGallery(
         renderingDiv,
@@ -2345,32 +2337,30 @@ async function renderProject(key) {
   };
 
   if (project.droneDeploy && project.droneDeploy.projectId) {
-    // First try DD
     const ok = await loadDD();
-
-    // If OK, refresh hourly while user is on this project
     if (ok) {
       __ddIntervalHandle = setInterval(async () => {
-        // only refresh if still on same project
         if (selector.value === key) await loadDD();
       }, DRONEDEPLOY_REFRESH_MS);
     }
   } else {
-    // Default gallery behavior (existing)
     renderGallery(renderingDiv, (project.renderings || []));
   }
 
   /* Map */
-  const iframe = content.querySelector(".map-section iframe");
+  const iframe = document.querySelector("#mapCard iframe");
   if (iframe) iframe.src = project.mapUrl || "";
 
-  /* Swap section headings */
+  /* Heading swaps (targeted by ID so Weekly CAC Notes doesn’t interfere) */
+  const notesH4 = document.querySelector("#notesCard h4");
+  const leasingH4 = document.querySelector("#leasingCard h4");
+
   if (key === "tgcportfolio") {
-    content.querySelector(".investment-highlights h4").textContent = "Portfolio Highlights";
-    content.querySelector(".property-details h4").textContent = "Pipeline Details";
+    if (notesH4) notesH4.textContent = "Portfolio Highlights";
+    if (leasingH4) leasingH4.textContent = "Pipeline Details";
   } else {
-    content.querySelector(".investment-highlights h4").textContent = "Notes & Updates";
-    content.querySelector(".property-details h4").textContent = "Entrata Box Score";
+    if (notesH4) notesH4.textContent = "Health Notes & Updates";
+    if (leasingH4) leasingH4.textContent = "Entrata Box Score";
   }
 }
 
@@ -2387,11 +2377,8 @@ function showSlides(n) {
   slides[slideIndex - 1].style.display = "block";
 }
 
-/* Initial render + listeners */
 renderProject(selector.value || Object.keys(projects)[0]);
 selector.addEventListener("change", e => renderProject(e.target.value));
-
-/* also keep padding correct on viewport resize */
 window.addEventListener("resize", () => updateExcelScrollbarPadding(content));
   </script>
 </body>
