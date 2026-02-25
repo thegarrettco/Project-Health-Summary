@@ -2137,6 +2137,105 @@ async function loadSmartPMFromWorkerOrFallback(project, smTable, smBadge) {
 }
 
 /* ============================================================
+   Cash Flow Loader (corrected for real KV structure)
+   ============================================================ */
+async function loadCashFlowFromWorker() {
+  try {
+    const res = await fetch("https://eg-executive-dashboard.bshives.workers.dev/cash-flow", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); }
+    catch { return null; }
+
+    if (!json || !Array.isArray(json.cashFlow)) return null;
+
+    const arr = json.cashFlow;
+    if (!arr.length) return null;
+
+    const header = arr[0];
+    const rowsSource = arr.slice(1);
+
+    const columns = [
+      header.chargeType,
+      header.revisedBankSOV,
+      header.amountBilled,
+      header.percentBilled,
+      header.balanceToBill
+    ];
+
+    const rows = [];
+
+    rowsSource.forEach(r => {
+      if (!r) return;
+
+      const t = r.type;
+      const ct = (r.chargeType || "").trim();
+
+      // Section headers
+      if (t === "section") {
+        rows.push({ section: ct });
+        return;
+      }
+
+      // Subtotals (Construction Total, Companies Total)
+if (t === "subtotal") {
+  rows.push({
+    subtotal: true,   // ✅ was total: true
+    label: ct,
+    values: [
+      r.revisedBankSOV ?? "—",
+      r.amountBilled ?? "—",
+      r.percentBilled ?? "—",
+      r.balanceToBill ?? "—"
+    ]
+  });
+  rows.push({ divider: true });
+  return;
+}
+
+// Grand total
+if (t === "grandTotal") {
+  rows.push({
+    total: true,      // ✅ this is the one true "total" row
+    label: ct,
+    values: [
+      r.revisedBankSOV ?? "—",
+      r.amountBilled ?? "—",
+      r.percentBilled ?? "—",
+      r.balanceToBill ?? "—"
+    ]
+  });
+  return;
+}
+
+
+      // Normal data rows
+      if (t === "row") {
+        rows.push({
+          label: ct,
+          values: [
+            r.revisedBankSOV ?? "—",
+            r.amountBilled ?? "—",
+            r.percentBilled ?? "—",
+            r.balanceToBill ?? "—"
+          ]
+        });
+      }
+    });
+
+    return { columns, rows };
+  } catch (err) {
+    console.error("[CashFlow] load failed:", err);
+    return null;
+  }
+}
+
+
+/* ============================================================
    Entrata + DroneDeploy usage and renderProject
    ============================================================ */
 function getEntrataBasicAuthHeader(project) {
@@ -2560,17 +2659,26 @@ async function renderProject(key) {
     if (phTable) phTable.innerHTML = "";
   }
 
-  /* Cash Flow */
-  const cfTable = document.getElementById("cashFlowTable");
-  const cfBadge = document.getElementById("cashFlowAsOfBadge");
-  if (project.cashFlow && project.cashFlow.columns && project.cashFlow.rows) {
+  /* Cash Flow (live from Worker KV) */
+const cfTable = document.getElementById("cashFlowTable");
+const cfBadge = document.getElementById("cashFlowAsOfBadge");
+
+try {
+  const cfCfg = await loadCashFlowFromWorker();
+
+  if (cfCfg && cfCfg.columns && cfCfg.rows) {
     cfBadge.style.display = "inline-block";
     cfBadge.textContent = `As of ${todayMDY}`;
-    renderExcelTable(cfTable, project.cashFlow);
+    renderExcelTable(cfTable, cfCfg);
   } else {
     setCardVisibility("cashFlowCard", false);
     if (cfTable) cfTable.innerHTML = "";
   }
+} catch (err) {
+  console.error("[CashFlow] render failed:", err);
+  setCardVisibility("cashFlowCard", false);
+  if (cfTable) cfTable.innerHTML = "";
+}
 
   /* CAC Variance Update */
   const psTable = document.getElementById("projectScheduleTable");
