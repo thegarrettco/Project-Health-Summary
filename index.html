@@ -3073,8 +3073,9 @@ function renderGCProjections(gcp) {
   document.getElementById("gc-months-total").textContent =
     fmtMonths(gcp.monthsRemaining);
 
-  document.getElementById("gc-months-details").innerHTML =
-    `<b>Estimated Finish:</b> ${gcp.estimatedFinish || "—"}`;
+ document.getElementById("gc-months-details").innerHTML =
+  `<b>Estimated Finish:</b> ${gcp.estimatedFinish ? formatISOToMDY(gcp.estimatedFinish) : "—"}`;
+
 
   // GC COST REMAINING
   document.getElementById("gc-cost-total").textContent =
