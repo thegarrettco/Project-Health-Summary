@@ -882,6 +882,11 @@
   </div>
 
   <div class="financial-metrics" id="profitSummaryMetrics">
+
+    <!-- ========================= -->
+    <!--      PROFIT SUMMARY      -->
+    <!-- ========================= -->
+
     <!-- ORIGINAL PROFIT -->
     <div class="metric-card" id="profit-original-card">
       <div class="metric-label">Original Profit</div>
@@ -902,9 +907,32 @@
       <div class="metric-value" id="profit-variance-total">—</div>
       <div class="metric-details" id="profit-variance-details"></div>
     </div>
+
+    <!-- ========================= -->
+    <!--      GC PROJECTIONS      -->
+    <!-- ========================= -->
+
+    <!-- SWAG PER MONTH -->
+    <div class="metric-card" id="gc-swag-card">
+      <div class="metric-label">SWAG per Month</div>
+      <div class="metric-value" id="gc-swag-total">—</div>
+    </div>
+
+    <!-- MONTHS REMAINING -->
+    <div class="metric-card" id="gc-months-card">
+      <div class="metric-label">Months Remaining</div>
+      <div class="metric-value" id="gc-months-total">—</div>
+      <div class="metric-details" id="gc-months-details"></div>
+    </div>
+
+    <!-- GC COST REMAINING -->
+    <div class="metric-card" id="gc-cost-card">
+      <div class="metric-label">GC Cost Remaining</div>
+      <div class="metric-value" id="gc-cost-total">—</div>
+    </div>
+
   </div>
 </div>
-
 
         <!-- Entrata Box Score (badge in usual top-right spot) -->
         <div class="property-details" id="leasingCard" style="display:none;">
@@ -2403,6 +2431,24 @@ async function loadProfitSummaryFromWorker() {
   }
 }
 
+/* ============================================================
+GC Projections Loader
+============================================================ */
+async function loadGCProjectionsFromWorker() {
+  try {
+    const res = await fetch("https://eg-executive-dashboard.bshives.workers.dev/gc-projections", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("[GCProjections] load failed:", err);
+    return null;
+  }
+}
+
 
 /* ============================================================
    Entrata + DroneDeploy usage and renderProject
@@ -2860,6 +2906,55 @@ try {
   if (hnList) hnList.innerHTML = "";
 }
 
+/* GC Projections (live from Worker KV) */
+function renderGCProjections(gcp) {
+  if (!gcp) return;
+
+  const fmtTotal = (n) => {
+    if (n === null || n === undefined) return "—";
+    const num = Number(String(n).replace(/[^0-9.-]/g, ""));
+    if (isNaN(num)) return n;
+    if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+    return `$${num.toLocaleString()}`;
+  };
+
+  const fmtMonths = (n) => {
+    if (n === null || n === undefined) return "—";
+    const num = Number(n);
+    if (isNaN(num)) return n;
+    return num.toFixed(2);
+  };
+
+  // SWAG PER MONTH
+  document.getElementById("gc-swag-total").textContent =
+    fmtTotal(gcp.swagPerMonth);
+
+  // MONTHS REMAINING
+  document.getElementById("gc-months-total").textContent =
+    fmtMonths(gcp.monthsRemaining);
+
+  document.getElementById("gc-months-details").innerHTML =
+    `<b>Estimated Finish:</b> ${gcp.estimatedFinish || "—"}`;
+
+  // GC COST REMAINING
+  document.getElementById("gc-cost-total").textContent =
+    fmtTotal(gcp.gcCostRemaining);
+
+  // Click-to-toggle ONLY for Months Remaining
+  const monthsCard = document.getElementById("gc-months-card");
+  const monthsDetails = document.getElementById("gc-months-details");
+
+  if (monthsCard && monthsDetails) {
+    monthsDetails.style.display = "none";
+    monthsCard.style.cursor = "pointer";
+    monthsCard.onclick = () => {
+      monthsDetails.style.display =
+        monthsDetails.style.display === "none" ? "block" : "none";
+    };
+  }
+}
+
 /* ============================================================
 Profit Summary Renderer
 ============================================================ */
@@ -2947,6 +3042,66 @@ loadProfitSummaryFromWorker().then(data => {
       };
     }
   });
+  
+/* ============================================================
+GC Projections Renderer
+============================================================ */
+function renderGCProjections(gcp) {
+  if (!gcp) return;
+
+  const fmtTotal = (n) => {
+    if (n === null || n === undefined) return "—";
+    const num = Number(String(n).replace(/[^0-9.-]/g, ""));
+    if (isNaN(num)) return n;
+    if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+    return `$${num.toLocaleString()}`;
+  };
+
+  const fmtMonths = (n) => {
+    if (n === null || n === undefined) return "—";
+    const num = Number(n);
+    if (isNaN(num)) return n;
+    return num.toFixed(2);
+  };
+
+  // SWAG PER MONTH
+  document.getElementById("gc-swag-total").textContent =
+    fmtTotal(gcp.swagPerMonth);
+
+  // MONTHS REMAINING
+  document.getElementById("gc-months-total").textContent =
+    fmtMonths(gcp.monthsRemaining);
+
+  document.getElementById("gc-months-details").innerHTML =
+    `<b>Estimated Finish:</b> ${gcp.estimatedFinish || "—"}`;
+
+  // GC COST REMAINING
+  document.getElementById("gc-cost-total").textContent =
+    fmtTotal(gcp.gcCostRemaining);
+
+  // Click-to-toggle ONLY for Months Remaining
+  const monthsCard = document.getElementById("gc-months-card");
+  const monthsDetails = document.getElementById("gc-months-details");
+
+  if (monthsCard && monthsDetails) {
+    monthsDetails.style.display = "none";
+    monthsCard.style.cursor = "pointer";
+    monthsCard.onclick = () => {
+      monthsDetails.style.display =
+        monthsDetails.style.display === "none" ? "block" : "none";
+    };
+  }
+}
+
+/* ============================================================
+GC Projections Hook (matches Profit Summary pattern)
+============================================================ */
+loadGCProjectionsFromWorker().then(data => {
+  if (data && data.gcProjections) {
+    renderGCProjections(data.gcProjections);
+  }
+});
 
 
   /* CAC Variance Update */
