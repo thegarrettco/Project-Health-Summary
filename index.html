@@ -708,7 +708,7 @@
         display: contents;
       }
 
-      .main-grid.is-project #projectScheduleCard      { grid-area: psu; }
+      .main-grid.is-project #cacVarianceUpdateCard      { grid-area: psu; }
       .main-grid.is-project #weeklyCACNotesCard       { grid-area: weeklycac; }
       .main-grid.is-project #scheduleVarianceCard     { grid-area: svu; }
       .main-grid.is-project #smartPMKeyMilestonesCard { grid-area: smartpm; }
@@ -724,7 +724,7 @@
       .main-grid.is-project #galleryCard           { grid-area: gallery; }
       .main-grid.is-project #mapCard               { grid-area: map; }
 
-      .main-grid.is-project #projectScheduleCard,
+      .main-grid.is-project #cacVarianceUpdateCard,
       .main-grid.is-project #weeklyCACNotesCard,
       .main-grid.is-project #scheduleVarianceCard,
       .main-grid.is-project #smartPMKeyMilestonesCard,
@@ -818,17 +818,18 @@
         </div>
       </div>
 
-      <!-- ✅ FULL-WIDTH ROW #1 (PROJECT PAGES ONLY) -->
-      <div class="financial-section excel-card span-two" id="projectScheduleCard" style="display:none;">
-        <div class="excel-card-header">
-          <h4 class="excel-card-title" style="margin:0;">CAC Variance Update</h4>
-          <div class="excel-card-badge" id="projectScheduleBadge" style="display:none;"></div>
-        </div>
+     <!-- FULL-WIDTH ROW #1 (PROJECT PAGES ONLY) -->
+<div class="financial-section excel-card span-two" id="cacVarianceUpdateCard" style="display:none;">
+  <div class="excel-card-header">
+    <h4 class="excel-card-title" style="margin:0;">CAC Variance Update</h4>
+    <div class="excel-card-badge" id="cacVarianceUpdateBadge" style="display:none;"></div>
+  </div>
 
-        <div class="excel-table-wrap">
-          <table class="excel-table" id="projectScheduleTable" aria-label="CAC Variance Update Table"></table>
-        </div>
-      </div>
+  <div class="excel-table-wrap">
+    <table class="excel-table" id="cacVarianceUpdateTable" aria-label="CAC Variance Update Table"></table>
+  </div>
+</div>
+
 
       <!-- ✅ Garrett Mesa ONLY: Weekly CAC Notes (bulleted) -->
       <div class="investment-highlights span-two" id="weeklyCACNotesCard" style="display:none;">
@@ -1262,7 +1263,7 @@ const projects = {
       ]
     },
 
-    projectScheduleUpdate: {
+    cacVarianceUpdate: {
       badge: "Approved 2/17/26",
       columns: ["Cost Code", "Division", "CAC Variance", "Detail Description", "Committee Request"],
       rows: [
@@ -1637,6 +1638,31 @@ function formatPercent2(frac) {
   const x = Number(frac);
   if (!Number.isFinite(x)) return "—";
   return `${(x * 100).toFixed(2)}%`;
+}
+
+function formatAccountingCurrency2FromNumber(n) {
+  if (n === null || n === undefined) return "—";
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "—";
+  if (x < 0) return `(${formatCurrency2(Math.abs(x))})`;
+  return formatCurrency2(x);
+}
+
+function formatAccountingCurrency2FromAny(val) {
+  // Accepts strings like "($103,514.20)", "$3,060.00", "-1234.5", "1234.5"
+  const n = parseMoneyishToNumber(val);
+  if (typeof n === "number") return formatAccountingCurrency2FromNumber(n);
+
+  // If it isn't parseable, keep original (or dash)
+  if (val === null || val === undefined || String(val).trim() === "") return "—";
+  return String(val);
+}
+
+function pick(obj, keys, fallback = "—") {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "") return obj[k];
+  }
+  return fallback;
 }
 
 function buildEntrataRpcPayload(project) {
@@ -2402,6 +2428,134 @@ async function loadHealthNotesFromWorker() {
   }
 }
 
+async function loadCACVarianceUpdateFromWorker() {
+  try {
+    const res = await fetch("https://eg-executive-dashboard.bshives.workers.dev/cac-variance-update", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch { return null; }
+    if (!json) return null;
+
+    // Case A: { updatedAt, cacVarianceUpdate: [ {costCode, ...}, ... ] }
+    if (Array.isArray(json.cacVarianceUpdate)) {
+      return { updatedAt: json.updatedAt || null, rows: json.cacVarianceUpdate };
+    }
+
+    // Case B: { updatedAt, cacVarianceUpdate: [ headerRow, rowRow, ... ] } where rows are like Cash Flow
+    // or: { updatedAt, rows: [...] }
+    const arr = Array.isArray(json.rows) ? json.rows : null;
+    if (arr && arr.length) return { updatedAt: json.updatedAt || null, rows: arr };
+
+    return null;
+  } catch (err) {
+    console.error("[CACVariance] load failed:", err);
+    return null;
+  }
+}
+
+function renderCACVarianceUpdateFromRows(rows, updatedAtIsoOrNull) {
+  const table = document.getElementById("cacVarianceUpdateTable");
+  const badge = document.getElementById("cacVarianceUpdateBadge");
+  if (!table) return;
+
+  const updated = updatedAtIsoOrNull ? formatISOToMDY(updatedAtIsoOrNull) : getTodayMDY();
+  if (badge) {
+    badge.textContent = `As of ${updated}`;
+    badge.style.display = "inline-block";
+  }
+
+  if (!Array.isArray(rows)) rows = [];
+
+  // Normalize incoming rows into a consistent shape, with lots of alias support
+  const normalized = rows
+    .filter(r => r && typeof r === "object")
+    .map(r => {
+      const costCode = pick(r, ["costCode", "cost_code", "Cost Code", "cost_code_text", "code"], "—");
+      const division = pick(r, ["division", "Division", "trade", "costDivision"], "—");
+
+      // CAC Variance: normalize to accounting currency display
+      const cacVarRaw = pick(r, ["cacVariance", "cac_variance", "CAC Variance", "variance", "Variance"], "—");
+      const cacVariance = formatAccountingCurrency2FromAny(cacVarRaw);
+
+      const detailDescription = pick(
+        r,
+        ["detailDescription", "detail_description", "Detail Description", "description", "Detail", "detail"],
+        "—"
+      );
+
+      const committeeRequest = pick(
+        r,
+        ["committeeRequest", "committee_request", "Committee Request", "request", "Committee"],
+        "—"
+      );
+
+      const ceNumber = pick(
+        r,
+        ["ceNumber", "ce_number", "CE #", "CE#", "ce", "ceNo", "changeEvent", "change_event"],
+        "—"
+      );
+
+      // Detect "Grand Total" regardless of how Worker labels it
+      const labelMaybe = String(costCode || "").trim();
+      const isGrandTotal =
+        !!r.total ||
+        r.type === "grandTotal" ||
+        r.type === "total" ||
+        /^grand\s*total$/i.test(labelMaybe);
+
+      return { costCode, division, cacVariance, detailDescription, committeeRequest, ceNumber, isGrandTotal };
+    });
+
+  // Split into detail rows vs total row
+  const totalRow = normalized.find(r => r.isGrandTotal) || null;
+  const detailRows = normalized.filter(r => !r.isGrandTotal);
+
+  // ✅ If there are no detail rows this month, insert placeholder row
+  const safeDetailRows = (detailRows.length > 0)
+    ? detailRows
+    : [{
+        costCode: "—",
+        division: "—",
+        cacVariance: "—",
+        detailDescription: "—",
+        committeeRequest: "—",
+        ceNumber: "—"
+      }];
+
+  // ✅ Ensure we always have a Grand Total row (even if Worker omits it)
+  const safeTotalRow = totalRow || {
+    costCode: "Grand Total",
+    division: "",
+    cacVariance: "—",
+    detailDescription: "",
+    committeeRequest: "",
+    ceNumber: ""
+  };
+
+  const config = {
+    columns: ["Cost Code", "Division", "CAC Variance", "Detail Description", "Committee Request", "CE #"],
+    rows: [
+      ...safeDetailRows.map(r => ({
+        label: r.costCode,
+        values: [r.division, r.cacVariance, r.detailDescription, r.committeeRequest, r.ceNumber]
+      })),
+      {
+        total: true,
+        label: "Grand Total",
+        values: [safeTotalRow.division || "", safeTotalRow.cacVariance || "—", "", "", safeTotalRow.ceNumber || ""]
+      }
+    ]
+  };
+
+  renderExcelTable(table, config);
+}
+
+
+
 /* ============================================================
 Profit Summary Loader
 ============================================================ */
@@ -2669,7 +2823,7 @@ async function renderProject(key) {
   setCardVisibility("coverPortfolioLeasingUpdateCard", isCover);
 
   if (isCover) {
-    setCardVisibility("projectScheduleCard", false);
+    setCardVisibility("cacVarianceUpdateCard", false);
     setCardVisibility("weeklyCACNotesCard", false);
     setCardVisibility("scheduleVarianceCard", false);
     setCardVisibility("smartPMKeyMilestonesCard", false);
@@ -2723,7 +2877,7 @@ async function renderProject(key) {
   }
 
   /* PROJECT PAGES */
-  setCardVisibility("projectScheduleCard", true);
+  setCardVisibility("cacVarianceUpdateCard", true);
   setCardVisibility("scheduleVarianceCard", true);
   setCardVisibility("projectHealthCard", true);
   setCardVisibility("cashFlowCard", true);
@@ -3106,22 +3260,37 @@ loadGCProjectionsFromWorker().then(data => {
 
 
   /* CAC Variance Update */
-  const psTable = document.getElementById("projectScheduleTable");
-  const psBadge = document.getElementById("projectScheduleBadge");
-  const psCfg = project.projectScheduleUpdate;
-  if (psCfg && psCfg.columns && psCfg.rows) {
-    if (psCfg.badge) {
+  // Ensure card visibility uses ID WITHOUT "#"
+setCardVisibility("cacVarianceUpdateCard", true);
+
+try {
+  const live = await loadCACVarianceUpdateFromWorker();
+
+  if (live && Array.isArray(live.rows)) {
+    renderCACVarianceUpdateFromRows(live.rows, live.updatedAt);
+  } else if (project.cacVarianceUpdate) {
+    // fallback to static config if you want
+    const psTable = document.getElementById("cacVarianceUpdateTable");
+    const psBadge = document.getElementById("cacVarianceUpdateBadge");
+    const psCfg = project.cacVarianceUpdate;
+
+    if (psCfg?.badge && psBadge) {
       psBadge.style.display = "inline-block";
       psBadge.textContent = psCfg.badge;
-    } else {
+    } else if (psBadge) {
       psBadge.style.display = "none";
     }
+
     renderExcelTable(psTable, psCfg);
   } else {
-    setCardVisibility("projectScheduleCard", false);
-    if (psTable) psTable.innerHTML = "";
-    if (psBadge) psBadge.style.display = "none";
+    setCardVisibility("cacVarianceUpdateCard", false);
   }
+} catch (err) {
+  console.error("[CACVariance] render failed:", err);
+  // Do NOT crash the rest of the page
+  setCardVisibility("cacVarianceUpdateCard", false);
+}
+
 
   /* Schedule Variance Update */
   const svTable = document.getElementById("scheduleVarianceTable");
@@ -3157,6 +3326,8 @@ loadGCProjectionsFromWorker().then(data => {
 
   updateExcelScrollbarPadding(content);
   attachExcelWrapObservers(content);
+
+
 
   /* Logo-to-home behavior */
   function goToFullPortfolio(scrollToTop = true) {
