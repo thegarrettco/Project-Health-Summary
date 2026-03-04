@@ -2993,6 +2993,260 @@ async function loadProfitSummaryFromWorker() {
 }
 
 /* ============================================================
+   Weekly CAC Notes Loader (Worker KV)
+   Endpoint: /weekly-cac-notes
+
+   REQUIRED behaviors (per your notes):
+   1) Pull ONLY the “primary section” rows (stop at FIRST blank Cost Description marker row).
+      - This prevents “too many values again”.
+      - This DOES NOT depend on trailing empty trimming (that stays, but happens after).
+
+   2) Vacant-cell behaviors:
+      - Amount: blank -> "$0.00"
+      - CE / CR: blank -> "—"
+      - Reason/Notes: blank -> "" (stay blank)
+      - Cost Description: blank row is the STOP marker (not rendered)
+
+   3) Number formatting:
+      - Amount: if numeric -> accounting currency
+      - Amount: if non-numeric (e.g., "TBD") -> keep as-is
+      - Worker total: same rules; if blank, compute from rows
+
+   ============================================================ */
+
+const __weeklyCACCache = new Map();
+
+function toStr(v) {
+  return (v ?? "").toString();
+}
+
+function isBlankish(v) {
+  return toStr(v).trim() === "";
+}
+
+/* -----------------------------
+   Row trimming (order matters)
+   ----------------------------- */
+
+// Stop when we hit the first blank "Cost Description" marker row.
+// (Matches your example: stop after "Siding".)
+function trimWeeklyCACRowsAtFirstBlankMarker(rows) {
+  if (!Array.isArray(rows)) return [];
+
+  const idx = rows.findIndex(r => {
+    const cd = toStr(r?.costDescription).trim();
+    return cd === "";
+  });
+
+  // If no blank marker exists, keep all rows
+  if (idx === -1) return rows;
+
+  // Stop BEFORE the blank marker row
+  return rows.slice(0, idx);
+}
+
+// A row is "fully empty" only if ALL fields are blank-ish.
+// Used to trim ONLY trailing garbage (after we already stopped at marker).
+function isWeeklyCACRowFullyEmpty(r) {
+  if (!r) return true;
+  return (
+    isBlankish(r.costDescription) &&
+    isBlankish(r.amount) &&
+    isBlankish(r.reasonNotes) &&
+    isBlankish(r.ce) &&
+    isBlankish(r.cr)
+  );
+}
+
+// Trim ONLY trailing fully-empty rows.
+function trimWeeklyCACRowsTrailingEmpty(rows) {
+  if (!Array.isArray(rows)) return [];
+  let end = rows.length;
+  while (end > 0 && isWeeklyCACRowFullyEmpty(rows[end - 1])) end--;
+  return rows.slice(0, end);
+}
+
+/* -----------------------------
+   Cell normalization
+   ----------------------------- */
+
+// For text-ish cells, keep true blanks as "" (don’t invent placeholders here)
+function normalizeTextKeepBlank(raw) {
+  const s = toStr(raw);
+  return s.trim() === "" ? "" : s.toString();
+}
+
+// Amount rules:
+// - blank -> "$0.00"  (your requested behavior)
+// - numeric -> accounting currency
+// - non-numeric -> preserve as-is (TBD/—/etc)
+function formatWeeklyCACAmountCell(raw) {
+  const s = toStr(raw).trim();
+
+  if (s === "") return "$0.00";
+
+  const n = parseMoneyishToNumber(s);
+  if (typeof n === "number" && Number.isFinite(n)) {
+    return formatAccountingCurrency2FromNumber(n);
+  }
+
+  return s;
+}
+
+// CE/CR rules:
+// - blank -> "—"
+// - otherwise preserve (trimmed)
+function formatWeeklyCACDashIfBlank(raw) {
+  const s = toStr(raw).trim();
+  return s === "" ? "—" : s;
+}
+
+function normalizeWeeklyCACRows(rows) {
+  if (!Array.isArray(rows)) return [];
+
+  return rows.map(r => {
+    const costDescription = normalizeTextKeepBlank(r?.costDescription);
+    const amount = formatWeeklyCACAmountCell(r?.amount);
+    const reasonNotes = normalizeTextKeepBlank(r?.reasonNotes);
+    const ce = formatWeeklyCACDashIfBlank(r?.ce);
+    const cr = formatWeeklyCACDashIfBlank(r?.cr);
+
+    return {
+      label: costDescription,
+      values: [amount, reasonNotes, ce, cr]
+    };
+  });
+}
+
+function computeWeeklyCACTotalFromRows(rows) {
+  // Sum only parseable numeric amounts. BLANKS DO NOT automatically mean 0 for summing,
+  // because your Excel may have intentionally blank/non-numeric entries.
+  // (So we keep your previous behavior here.)
+  let sum = 0;
+  let any = false;
+
+  (rows || []).forEach(r => {
+    const amt = r?.amount ?? r?.values?.[0];
+    const n = parseMoneyishToNumber(amt);
+    if (typeof n === "number" && Number.isFinite(n)) {
+      sum += n;
+      any = true;
+    }
+  });
+
+  return any ? formatAccountingCurrency2FromNumber(sum) : "";
+}
+
+/* -----------------------------
+   Fetch
+   ----------------------------- */
+
+async function loadWeeklyCACNotesFromWorker(project) {
+  try {
+    const projectName = (project?.name || "").trim();
+    const url = projectName
+      ? `https://eg-executive-dashboard.bshives.workers.dev/weekly-cac-notes?project=${encodeURIComponent(projectName)}`
+      : `https://eg-executive-dashboard.bshives.workers.dev/weekly-cac-notes`;
+
+    const cacheKey = `weeklycac:${projectName || "default"}`;
+    const cached = __weeklyCACCache.get(cacheKey);
+
+    // light caching so this doesn’t re-fetch a bunch during resizing / re-render quirks
+    if (cached && (Date.now() - cached.ts) < (2 * 60 * 1000)) {
+      return cached.data;
+    }
+
+    const res = await fetch(url, { method: "GET" });
+    const text = await res.text();
+
+    let json;
+    try { json = JSON.parse(text); } catch { return null; }
+    if (!res.ok) return null;
+
+    // rows might arrive as a string (because your PA flow currently sends it that way)
+    let rows = json?.rows;
+    if (typeof rows === "string") {
+      try { rows = JSON.parse(rows); } catch { rows = []; }
+    }
+
+    const data = {
+      updatedAt: json?.updatedAt || null,
+      total: toStr(json?.total),
+      rows: Array.isArray(rows) ? rows : [],
+      project: json?.project
+    };
+
+    __weeklyCACCache.set(cacheKey, { ts: Date.now(), data });
+    return data;
+  } catch (err) {
+    console.error("[WeeklyCAC] load failed:", err);
+    return null;
+  }
+}
+
+/* -----------------------------
+   Render
+   ----------------------------- */
+
+function renderWeeklyCACNotesFromWorkerPayload(tableEl, badgeEl, payload, selectedProjectName) {
+  if (!tableEl) return;
+
+  // 1) Enforce project match (prevents Emblem Mesa data showing on Garrett Mesa page)
+  const payloadProject = normalizeProjectName(payload?.project);
+  const selectedProject = normalizeProjectName(selectedProjectName);
+
+  if (payloadProject && selectedProject && payloadProject !== selectedProject) {
+    tableEl.innerHTML = "";
+    if (badgeEl) badgeEl.style.display = "none";
+    return;
+  }
+
+  const updated = payload?.updatedAt ? formatISOToMDY(payload.updatedAt) : getTodayMDY();
+  if (badgeEl) {
+    badgeEl.style.display = "inline-block";
+    badgeEl.textContent = `As of ${updated}`;
+  }
+
+  // 2) FIRST: stop at the blank marker (prevents pulling “too many values”)
+  const primarySection = trimWeeklyCACRowsAtFirstBlankMarker(payload?.rows || []);
+
+  // 3) THEN: trim any trailing fully-empty junk rows (safe cleanup)
+  const trimmed = trimWeeklyCACRowsTrailingEmpty(primarySection);
+
+  // 4) Normalize to your renderExcelTable format + apply blank behaviors
+  const normalizedRows = normalizeWeeklyCACRows(trimmed);
+
+  // 5) Total: prefer Worker total (formatted if numeric; if blank, compute)
+  const workerTotalRaw = toStr(payload?.total).trim();
+  const totalFromWorker = workerTotalRaw ? formatWeeklyCACAmountCell(workerTotalRaw) : "";
+  const total = totalFromWorker || computeWeeklyCACTotalFromRows(trimmed);
+
+  const config = {
+    columns: ["Cost Description", "Amount", "Reason / Notes", "CE #", "CR #"],
+    rows: [
+      ...normalizedRows,
+      ...(total
+        ? [{
+            total: true,
+            label: "Grand Total",
+            values: [total, "", "", ""] // keep your blank behaviors consistent in totals row too
+          }]
+        : [])
+    ]
+  };
+
+  renderExcelTable(tableEl, config);
+}
+
+function normalizeProjectName(s) {
+  return (s || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/* ============================================================
 GC Projections Loader
 ============================================================ */
 async function loadGCProjectionsFromWorker() {
@@ -3445,28 +3699,38 @@ async function renderProject(key) {
   setCardVisibility("smartPMKeyMilestonesCard", isGarrettMesa);
 
   if (isGarrettMesa) {
-  // ✅ Weekly CAC Notes (excel-table)
+  // ✅ Weekly CAC Notes (live from Worker; fallback to static)
   const wcnTable = document.getElementById("weeklyCACNotesTable");
   const wcnBadge = document.getElementById("weeklyCACNotesBadge");
-  const wcnCfg = project.weeklyCACNotes;
 
-  if (wcnCfg && wcnCfg.columns && wcnCfg.rows) {
-    if (wcnBadge) {
-      wcnBadge.style.display = "inline-block";
-      wcnBadge.textContent = wcnCfg.badge || `As of ${getTodayMDY()}`;
+  try {
+    const live = await loadWeeklyCACNotesFromWorker(project);
+
+    if (live && Array.isArray(live.rows)) {
+      renderWeeklyCACNotesFromWorkerPayload(wcnTable, wcnBadge, live);
+    } else if (project.weeklyCACNotes && project.weeklyCACNotes.columns && project.weeklyCACNotes.rows) {
+      // fallback
+      const wcnCfg = project.weeklyCACNotes;
+      if (wcnBadge) {
+        wcnBadge.style.display = "inline-block";
+        wcnBadge.textContent = wcnCfg.badge || `As of ${getTodayMDY()}`;
+      }
+      renderExcelTable(wcnTable, wcnCfg);
+    } else {
+      if (wcnTable) wcnTable.innerHTML = "";
+      if (wcnBadge) wcnBadge.style.display = "none";
     }
-    renderExcelTable(wcnTable, wcnCfg);
-  } else {
+  } catch (err) {
+    console.error("[WeeklyCAC] render failed:", err);
     if (wcnTable) wcnTable.innerHTML = "";
     if (wcnBadge) wcnBadge.style.display = "none";
   }
 
-    const smTable = document.getElementById("smartPMKeyMilestonesTable");
-    const smBadge = document.getElementById("smartPMKeyMilestonesBadge");
-
-    // Use the Worker endpoint first, fall back to static project.smartPMKeyMilestones
-    await loadSmartPMFromWorkerOrFallback(project, smTable, smBadge);
-  }
+  // SmartPM (unchanged)
+  const smTable = document.getElementById("smartPMKeyMilestonesTable");
+  const smBadge = document.getElementById("smartPMKeyMilestonesBadge");
+  await loadSmartPMFromWorkerOrFallback(project, smTable, smBadge);
+}
 
   /* Notes & Updates bullets */
   const notesUl = document.querySelector("#notesCard ul");
