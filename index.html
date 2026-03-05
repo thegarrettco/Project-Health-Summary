@@ -546,6 +546,18 @@
   font-size: 0.9rem;
 }
 
+/* Asset Mgmt summary: match Entrata body sizing */
+#assetManagementCard table td,
+#assetManagementCard table th {
+  font-size: 0.9rem;
+}
+
+/* Optional: tighten row spacing slightly (safe) */
+#assetManagementCard table th,
+#assetManagementCard table td {
+  padding: 0.45rem 0;
+}
+
     /* GALLERY */
     .rendering-section {
       position: relative;
@@ -697,6 +709,54 @@
 #scheduleVarianceUpdateCard td:first-child {
   font-weight: 700;
   color: var(--secondary);
+}
+
+/* =========================================================
+   Entrata-style dividers for Leasing Activity (leasingCard)
+   ========================================================= */
+#leasingCard table {
+  width: 100%;
+  border-collapse: collapse; /* important for crisp separators */
+}
+
+#leasingCard table th,
+#leasingCard table td {
+  padding: 0.55rem 0;                /* matches your other tables */
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08); /* subtle row divider */
+  vertical-align: top;
+}
+
+#leasingCard table tr:last-child th,
+#leasingCard table tr:last-child td {
+  border-bottom: none;
+}
+
+#leasingCard table th {
+  font-weight: 700;
+  color: var(--secondary);
+  text-align: left;
+  width: 65%;
+}
+
+#leasingCard table td {
+  text-align: right;                 /* feels like Entrata */
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dark);
+}
+
+/* Divider rows (from { divider:true }) */
+#leasingCard table tr.leasing-divider td {
+  padding: 0;
+  height: 10px;                      /* “breathing room” */
+  border-bottom: 1px solid rgba(0,0,0,0.10);
+}
+
+/* Optional: slightly soften the divider line ends */
+#leasingCard table tr.leasing-divider td::before {
+  content: "";
+  display: block;
+  height: 10px;
 }
 
     /* ===========================
@@ -1036,16 +1096,13 @@
 </div>
 
 
-        <!-- Asset Management Tracker (excel) -->
-        <div class="financial-section excel-card" id="assetManagementCard" style="display:none;">
-          <div class="excel-card-header">
-            <h4 class="excel-card-title" style="margin:0;">Asset Management Tracker</h4>
-            <div class="excel-card-badge" id="assetManagementBadge" style="display:none;"></div>
-          </div>
-          <div class="excel-table-wrap">
-            <table class="excel-table" id="assetManagementTable" aria-label="Asset Management Tracker Table"></table>
-          </div>
-        </div>
+        <div class="property-details" id="assetManagementCard" style="display:none;">
+  <div class="card-header">
+    <h4>Asset Management Tracker</h4>
+    <div class="excel-card-badge" id="assetManagementBadge" style="display:none;"></div>
+  </div>
+  <table></table>
+</div>
 
         <!-- Map under Asset Management Tracker -->
         <div class="map-section" id="mapCard" style="display:none;">
@@ -1217,29 +1274,29 @@ const projects = {
     },
 
     assetManagementTracker: {
-      badge: "As of 2/17/2026",
-      columns: ["Category", "Owner", "Status", "Next Action", "Due Date"],
-      rows: [
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] },
-        { label: "Example Item", values: ["TBD", "TBD", "Follow up", "2/29/2026"] }
-      ]
-    },
+  rows: [
+    { label: "Units", key: "units", format: "int" },
+    { label: "Equity Partner", key: "equity_partner", format: "text" },
+    { label: "Lender", key: "lender", format: "text" },
+
+    { divider: true },
+
+    { label: "Estimated Construction Completion", key: "est_construction_completion", format: "date" },
+    { label: "Prime Contract Date", key: "prime_contract_date", format: "date" },
+    { label: "Contingency Days: Prime Contract", key: "contingency_days_prime_contract", format: "int" },
+
+    { divider: true },
+
+    { label: "Bank Construction Completion Requirement", key: "bank_completion_requirement", format: "date" },
+    { label: "Buffer Days: Bank Completion Requirement", key: "buffer_days_bank_requirement", format: "int" },
+    { label: "Bank Maturity Date", key: "bank_maturity_date", format: "date" },
+
+    { divider: true },
+
+    { label: "Projected Stabilization Month", key: "projected_stabilization_month", format: "text" },
+    { label: "Projected Operating Deficit", key: "projected_operating_deficit", format: "currency0" }
+  ]
+},
 
     leasingActivity: {
       rows: [
@@ -1753,6 +1810,12 @@ function buildEntrataRpcPayload(project) {
       params: cfg.params
     }
   };
+}
+
+function setTextById(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = (value === null || value === undefined || String(value).trim() === "") ? "—" : String(value);
 }
 
 function getEntrataBasicAuthHeader(project) {
@@ -4122,19 +4185,90 @@ try {
   setCardVisibility("cacVarianceUpdateCard", false);
 }
 
-  /* Asset Management Tracker */
-  const amTable = document.getElementById("assetManagementTable");
-  const amBadge = document.getElementById("assetManagementBadge");
-  const amCfg = project.assetManagementTracker;
-  if (amCfg && amCfg.columns && amCfg.rows) {
-    if (amBadge && amCfg.badge) { amBadge.style.display = "inline-block"; amBadge.textContent = amCfg.badge; }
-    else if (amBadge) amBadge.style.display = "none";
-    renderExcelTable(amTable, amCfg);
-  } else {
-    setCardVisibility("assetManagementCard", false);
-    if (amTable) amTable.innerHTML = "";
-    if (amBadge) amBadge.style.display = "none";
-  }
+  /* Asset Management Tracker (same pattern as leasingActivity) */
+const amTableEl = document.querySelector("#assetManagementCard table");
+const amBadge = document.getElementById("assetManagementBadge");
+const amCfg = project?.assetManagementTracker;
+
+if (amBadge) {
+  amBadge.style.display = "inline-block";
+  amBadge.textContent = `As of ${todayMDY}`;
+}
+
+function renderAssetManagementTable(tableEl, config, values = {}) {
+  if (!tableEl) return;
+
+  const rows = Array.isArray(config?.rows) ? config.rows : [];
+  tableEl.innerHTML = "";
+
+  rows.forEach(r => {
+    if (r && r.divider) {
+      const tr = document.createElement("tr");
+      tr.className = "leasing-divider";
+      tr.innerHTML = `<td colspan="2"></td>`;
+      tableEl.appendChild(tr);
+      return;
+    }
+
+    const label = r?.label || "";
+    const key = r?.key;
+    const format = r?.format || "text";
+    const raw = key ? values[key] : null;
+
+    let val = "—";
+
+    switch (format) {
+      case "int":
+        val = formatInt(raw);
+        break;
+      case "number2":
+        val = formatNumber2(raw);
+        break;
+      case "currency2":
+        val = formatCurrency2(raw);
+        break;
+      case "currency0": {
+        const x = Number(raw);
+        val = Number.isFinite(x)
+          ? x.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+          : "—";
+        break;
+      }
+      case "percent2":
+        val = formatPercent2(raw);
+        break;
+      case "date":
+        val = raw ? formatISOToMDY(raw) || String(raw) : "—";
+        break;
+      case "text":
+      default:
+        val = (raw === null || raw === undefined || String(raw).trim() === "") ? "—" : String(raw);
+        break;
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<th>${escapeHtml(label)}</th><td>${escapeHtml(val)}</td>`;
+    tableEl.appendChild(tr);
+  });
+}
+
+if (amCfg && Array.isArray(amCfg.rows)) {
+  renderAssetManagementTable(amTableEl, amCfg, {
+    units: null,
+    equity_partner: null,
+    lender: null,
+    est_construction_completion: null,
+    prime_contract_date: null,
+    contingency_days_prime_contract: null,
+    bank_completion_requirement: null,
+    buffer_days_bank_requirement: null,
+    bank_maturity_date: null,
+    projected_stabilization_month: null,
+    projected_operating_deficit: null
+  });
+} else {
+  setCardVisibility("assetManagementCard", false);
+}
 
   updateExcelScrollbarPadding(content);
   attachExcelWrapObservers(content);
